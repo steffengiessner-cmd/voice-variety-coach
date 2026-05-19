@@ -177,6 +177,10 @@ body.own-text-mode .prompt-card {
   display: none;
 }
 
+body.is-recording .mode-switch {
+  display: none;
+}
+
 .prompt-header {
   display: flex;
   justify-content: space-between;
@@ -876,6 +880,16 @@ body.business-mode {
 
 .recording-notice.success {
   color: #3d7038;
+}
+
+.playback-audio {
+  display: none;
+  width: 100%;
+  margin: 0 0 14px;
+}
+
+.playback-audio.ready {
+  display: block;
 }
 
 .timer-row {

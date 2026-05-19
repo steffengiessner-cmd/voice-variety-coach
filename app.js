@@ -33,6 +33,7 @@ const modeInputs = Array.from(document.querySelectorAll("input[name='practiceMod
 const newPromptButton = document.querySelector("#newPromptButton");
 const recordButton = document.querySelector("#recordButton");
 const playButton = document.querySelector("#playButton");
+const playbackAudio = document.querySelector("#playbackAudio");
 const recordingNotice = document.querySelector("#recordingNotice");
 const sessionPill = document.querySelector("#sessionPill");
 const timer = document.querySelector("#timer");
@@ -57,6 +58,7 @@ let analyser;
 let source;
 let stream;
 let chunks = [];
+let recordedMimeType = "";
 let recordingStartedAt = 0;
 let timerInterval;
 let animationFrame;
@@ -472,7 +474,25 @@ function getMicrophoneIssue() {
     return "This browser cannot access the microphone from this page. Try http://127.0.0.1:5173/index.html in Chrome or Safari.";
   }
 
+  if (!window.MediaRecorder) {
+    return "This browser can access the microphone but cannot record audio here. Try a newer Safari or Chrome.";
+  }
+
   return "";
+}
+
+function getRecorderOptions() {
+  if (!window.MediaRecorder || typeof MediaRecorder.isTypeSupported !== "function") return {};
+
+  const mimeTypes = [
+    "audio/mp4",
+    "audio/webm;codecs=opus",
+    "audio/webm",
+    "audio/ogg;codecs=opus"
+  ];
+
+  const supportedType = mimeTypes.find(type => MediaRecorder.isTypeSupported(type));
+  return supportedType ? { mimeType: supportedType } : {};
 }
 
 function updateAudience(score) {
@@ -750,17 +770,27 @@ async function startRecording() {
   source.connect(analyser);
 
   chunks = [];
+  recordedMimeType = "";
   samples = [];
   pitchReadings = [];
   speakingFrames = 0;
   quietFrames = 0;
   liveFrame = 0;
+  if (audioUrl) URL.revokeObjectURL(audioUrl);
+  audioUrl = "";
+  playbackAudio.removeAttribute("src");
+  playbackAudio.classList.remove("ready");
+  playbackAudio.load();
   if (hasReadingPassage()) {
     updateReadingProgress(0, "Listening for the words you read...");
   }
 
-  mediaRecorder = new MediaRecorder(stream);
-  mediaRecorder.addEventListener("dataavailable", event => chunks.push(event.data));
+  const recorderOptions = getRecorderOptions();
+  mediaRecorder = new MediaRecorder(stream, recorderOptions);
+  recordedMimeType = mediaRecorder.mimeType || recorderOptions.mimeType || "";
+  mediaRecorder.addEventListener("dataavailable", event => {
+    if (event.data && event.data.size > 0) chunks.push(event.data);
+  });
   mediaRecorder.addEventListener("stop", finishRecording);
   mediaRecorder.start();
   startReadingTracker();
@@ -772,6 +802,7 @@ async function startRecording() {
 
   sessionPill.textContent = "Recording";
   sessionPill.classList.add("recording");
+  document.body.classList.add("is-recording");
   recordButton.textContent = "Stop Recording";
   recordButton.classList.add("recording");
   playButton.disabled = true;
@@ -789,13 +820,18 @@ function finishRecording() {
   stream.getTracks().forEach(track => track.stop());
   audioContext.close();
 
-  const blob = new Blob(chunks, { type: "audio/webm" });
+  const blobType = recordedMimeType || chunks[0]?.type || "audio/mp4";
+  const blob = new Blob(chunks, { type: blobType });
   if (audioUrl) URL.revokeObjectURL(audioUrl);
   audioUrl = URL.createObjectURL(blob);
+  playbackAudio.src = audioUrl;
+  playbackAudio.classList.add("ready");
+  playbackAudio.load();
   playButton.disabled = false;
 
   sessionPill.textContent = "Complete";
   sessionPill.classList.remove("recording");
+  document.body.classList.remove("is-recording");
   recordButton.textContent = "Start Recording";
   recordButton.classList.remove("recording");
   setRecordingNotice("Recording complete. Play it back or try another take.", "success");
@@ -817,6 +853,7 @@ async function toggleRecording() {
 
     sessionPill.textContent = "Ready";
     sessionPill.classList.remove("recording");
+    document.body.classList.remove("is-recording");
     recordButton.textContent = "Start Recording";
     recordButton.classList.remove("recording");
     setRecordingNotice(message, "warning");
@@ -826,10 +863,19 @@ async function toggleRecording() {
   }
 }
 
-function playRecording() {
-  if (!audioUrl) return;
-  const audio = new Audio(audioUrl);
-  audio.play();
+async function playRecording() {
+  if (!audioUrl) {
+    setRecordingNotice("Record a take first, then play it back.", "warning");
+    return;
+  }
+
+  try {
+    playbackAudio.currentTime = 0;
+    await playbackAudio.play();
+  } catch (error) {
+    setRecordingNotice("Playback was blocked. Use the audio controls below the buttons.", "warning");
+    playbackAudio.classList.add("ready");
+  }
 }
 
 newPromptButton.addEventListener("click", setPrompt);
