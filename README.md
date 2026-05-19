@@ -1,0 +1,38 @@
+# Voice Variety Coach
+
+A small browser app for practicing vocal variety. It gives you a speaking prompt, records a short take, plays it back, and estimates variety in energy, pitch movement, and pacing.
+
+## Run It Locally
+
+Because microphone access works best on `localhost`, start a small local server from this folder:
+
+```bash
+cd ~/Documents/GitHub/voice-variety-coach
+python3 -m http.server 5173
+```
+
+Then open:
+
+```text
+http://localhost:5173
+```
+
+## Use It
+
+1. Click **Start Recording**.
+2. Allow microphone access when the browser asks.
+3. Read the prompt aloud for 30-60 seconds.
+4. Click **Stop Recording**.
+5. Review the score and play back your recording.
+
+## Publish With GitHub Pages
+
+This app is plain HTML, CSS, and JavaScript, so it can be published directly with GitHub Pages.
+
+In GitHub:
+
+1. Open the repository settings.
+2. Go to **Pages**.
+3. Choose **Deploy from a branch**.
+4. Select the `main` branch and root folder.
+5. Save.

@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Voice Variety Coach</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="practice-panel" aria-labelledby="app-title">
+        <div class="top-bar">
+          <div>
+            <p class="eyebrow">Practice studio</p>
+            <h1 id="app-title">Voice Variety Coach</h1>
+          </div>
+          <div class="session-pill" id="sessionPill">Ready</div>
+        </div>
+
+        <div class="prompt-card">
+          <div class="prompt-header">
+            <span id="passageTitle">Read this aloud</span>
+            <button class="icon-button" id="newPromptButton" type="button" aria-label="New prompt" title="New prompt">
+              ↻
+            </button>
+          </div>
+          <div class="reading-progress" aria-hidden="true">
+            <div id="readingProgress"></div>
+          </div>
+          <div class="reading-text" id="readingText" tabindex="0" aria-label="Reading text"></div>
+          <p class="reading-status" id="readingStatus" aria-live="polite">Ready to follow your reading.</p>
+        </div>
+
+        <section class="audience-stage" id="audienceStage" aria-labelledby="audience-title">
+          <div class="stage-header">
+            <div>
+              <p class="eyebrow">Live audience</p>
+              <h2 id="audience-title">Classroom</h2>
+            </div>
+            <div class="attention-meter" aria-label="Audience attention">
+              <span id="attentionLabel">Warming up</span>
+              <div class="meter-track">
+                <div id="attentionMeter"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="audience-row" id="audienceRow">
+            <article class="kid kid-a ready" data-kid aria-label="Maya">
+              <div class="kid-head">
+                <span class="kid-hair"></span>
+                <span class="kid-eye kid-eye-left"></span>
+                <span class="kid-eye kid-eye-right"></span>
+                <span class="kid-mouth"></span>
+              </div>
+              <div class="kid-body">
+                <span class="kid-arm kid-arm-left"></span>
+                <span class="kid-arm kid-arm-right"></span>
+              </div>
+              <div class="desk"><span class="desk-item"></span></div>
+            </article>
+
+            <article class="kid kid-b ready" data-kid aria-label="Noah">
+              <div class="kid-head">
+                <span class="kid-hair"></span>
+                <span class="kid-eye kid-eye-left"></span>
+                <span class="kid-eye kid-eye-right"></span>
+                <span class="kid-mouth"></span>
+              </div>
+              <div class="kid-body">
+                <span class="kid-arm kid-arm-left"></span>
+                <span class="kid-arm kid-arm-right"></span>
+              </div>
+              <div class="desk"><span class="desk-item"></span></div>
+            </article>
+
+            <article class="kid kid-c ready" data-kid aria-label="Sam">
+              <div class="kid-head">
+                <span class="kid-hair"></span>
+                <span class="kid-eye kid-eye-left"></span>
+                <span class="kid-eye kid-eye-right"></span>
+                <span class="kid-mouth"></span>
+              </div>
+              <div class="kid-body">
+                <span class="kid-arm kid-arm-left"></span>
+                <span class="kid-arm kid-arm-right"></span>
+              </div>
+              <div class="desk"><span class="desk-item"></span></div>
+            </article>
+
+            <article class="kid kid-d ready" data-kid aria-label="Ivy">
+              <div class="kid-head">
+                <span class="kid-hair"></span>
+                <span class="kid-eye kid-eye-left"></span>
+                <span class="kid-eye kid-eye-right"></span>
+                <span class="kid-mouth"></span>
+              </div>
+              <div class="kid-body">
+                <span class="kid-arm kid-arm-left"></span>
+                <span class="kid-arm kid-arm-right"></span>
+              </div>
+              <div class="desk"><span class="desk-item"></span></div>
+            </article>
+
+            <article class="kid kid-e ready" data-kid aria-label="Leo">
+              <div class="kid-head">
+                <span class="kid-hair"></span>
+                <span class="kid-eye kid-eye-left"></span>
+                <span class="kid-eye kid-eye-right"></span>
+                <span class="kid-mouth"></span>
+              </div>
+              <div class="kid-body">
+                <span class="kid-arm kid-arm-left"></span>
+                <span class="kid-arm kid-arm-right"></span>
+              </div>
+              <div class="desk"><span class="desk-item"></span></div>
+            </article>
+          </div>
+        </section>
+
+        <div class="controls" aria-label="Recording controls">
+          <button class="primary-button" id="recordButton" type="button">Start Recording</button>
+          <button class="secondary-button" id="playButton" type="button" disabled>Play Back</button>
+        </div>
+        <p class="recording-notice" id="recordingNotice" aria-live="polite"></p>
+
+        <div class="timer-row">
+          <div>
+            <span class="label">Recording time</span>
+            <strong id="timer">00:00</strong>
+          </div>
+          <div>
+            <span class="label">Goal</span>
+            <strong>30-60 sec</strong>
+          </div>
+        </div>
+
+        <canvas id="waveform" width="900" height="180" aria-label="Voice waveform"></canvas>
+      </section>
+
+      <aside class="coach-panel" aria-labelledby="coach-title">
+        <h2 id="coach-title">Coach Feedback</h2>
+        <div class="score-ring" aria-label="Voice variety score">
+          <span id="scoreValue">--</span>
+          <small>score</small>
+        </div>
+
+        <div class="metrics">
+          <article>
+            <span>Volume variation</span>
+            <strong id="energyMetric">--</strong>
+          </article>
+          <article>
+            <span>Pitch variation</span>
+            <strong id="pitchMetric">--</strong>
+          </article>
+          <article>
+            <span>Pauses & pace</span>
+            <strong id="paceMetric">--</strong>
+          </article>
+        </div>
+
+        <div class="feedback-box">
+          <h3>Next practice focus</h3>
+          <p id="feedbackText">Record a short take and I will listen for variety in energy, pitch, and pace.</p>
+        </div>
+      </aside>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
