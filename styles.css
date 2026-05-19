@@ -112,6 +112,33 @@ h3 {
   border-color: #f3c4ba;
 }
 
+.mode-switch {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 12px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f4f7f6;
+}
+
+.mode-button {
+  min-height: 36px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-weight: 850;
+}
+
+.mode-button.active {
+  background: var(--panel);
+  color: var(--accent-dark);
+  box-shadow: 0 5px 16px rgba(23, 33, 43, 0.1);
+}
+
 .prompt-card {
   border: 1px solid var(--line);
   border-left: 5px solid var(--coral);
@@ -119,6 +146,10 @@ h3 {
   padding: 14px 16px;
   margin-bottom: 14px;
   background: #fffdfa;
+}
+
+body.own-text-mode .prompt-card {
+  display: none;
 }
 
 .prompt-header {
@@ -487,6 +518,95 @@ h3 {
   width: 20px;
   height: 18px;
   border-radius: 50%;
+}
+
+body.business-mode {
+  --paper: #f3f5f7;
+}
+
+.business-mode .audience-row {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0) 45%),
+    linear-gradient(180deg, #e9eef3 0 62%, #c8d0d8 62% 100%);
+}
+
+.business-mode .audience-row::before {
+  background:
+    linear-gradient(#9db0bf 0 0) 20px 20px / 72px 8px no-repeat,
+    linear-gradient(#9db0bf 0 0) 20px 38px / 150px 8px no-repeat,
+    linear-gradient(#0d7c80 0 0) calc(100% - 120px) 18px / 76px 36px no-repeat,
+    #f8fbfd;
+  border-color: #c5d0da;
+}
+
+.business-mode .kid {
+  --shirt: #2e5366;
+  min-height: 208px;
+}
+
+.business-mode .kid-a {
+  --shirt: #245c68;
+}
+
+.business-mode .kid-b {
+  --shirt: #474f63;
+}
+
+.business-mode .kid-c {
+  --shirt: #315b46;
+}
+
+.business-mode .kid-d {
+  --shirt: #6d4d69;
+}
+
+.business-mode .kid-e {
+  --shirt: #3d5575;
+}
+
+.business-mode .kid-head {
+  border-radius: 44% 44% 46% 46%;
+}
+
+.business-mode .kid-body {
+  border-radius: 14px 14px 8px 8px;
+  background:
+    linear-gradient(135deg, transparent 0 39%, rgba(255, 255, 255, 0.55) 40% 49%, transparent 50%) 0 0 / 50% 45% no-repeat,
+    linear-gradient(225deg, transparent 0 39%, rgba(255, 255, 255, 0.55) 40% 49%, transparent 50%) 100% 0 / 50% 45% no-repeat,
+    var(--shirt);
+}
+
+.business-mode .kid-body::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 12px;
+  width: 10px;
+  height: 36px;
+  border-radius: 2px 2px 8px 8px;
+  background: #d8674d;
+  transform: translateX(-50%);
+}
+
+.business-mode .kid-c .kid-body::before {
+  display: none;
+}
+
+.business-mode .desk {
+  height: 46px;
+  background: #9ca8b2;
+  box-shadow: inset 0 8px rgba(255, 255, 255, 0.28);
+}
+
+.business-mode .desk::after {
+  content: "";
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  top: 12px;
+  height: 18px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.42);
 }
 
 .kid-eye {

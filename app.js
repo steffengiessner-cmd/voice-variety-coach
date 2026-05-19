@@ -1,34 +1,35 @@
-const passages = [
-  {
-    title: "The First Day",
-    text: `On the first day of the project, everyone thought the idea was too small to matter. It was only a box of paper, a few colored pens, and a question written on the board: what would make our school feel more welcoming?
+const passageGroups = {
+  story: [
+    {
+      title: "The Dragon, the Mouse, and the Moon",
+      text: `The dragon spoke in a voice as deep as thunder. Who has taken the silver moon bell from my tower? he roared, and the windows of the village rattled.
 
-At first, nobody answered. Then Maya said that new students often looked lost near the front door. Sam suggested a map with friendly notes. Ivy wanted a quiet corner for anyone who felt overwhelmed. By the end of the morning, the small idea had become a plan.
+From behind a pumpkin cart, a tiny mouse lifted one paw. I borrowed it, she squeaked, because the river was lonely and needed music. The dragon blinked. The mayor gasped. The baker dropped an entire tray of buns.
 
-The surprising part was not the map, or the signs, or even the quiet corner. The surprising part was how quickly people began to care once they heard each other clearly.`
-  },
-  {
-    title: "The Storm Window",
-    text: `The rain started softly, almost politely, tapping on the classroom window while Mr. Ellis explained the science experiment. Then the wind arrived, pushing dark clouds across the sky and making the lights flicker.
+Then the river began to sing. Its voice was soft at first, then bright, then wild with joy. The dragon lowered his head and whispered, perhaps the bell belongs to everyone tonight.
 
-Noah looked worried, so the class paused. Instead of pretending nothing had changed, Mr. Ellis lowered his voice and said, listen carefully. Storms sound powerful, but we can stay calm and notice what is happening.
+So the mouse rang the bell once more. The dragon hummed along, the mayor clapped in rhythm, and even the baker laughed so loudly that the buns shook sugar into the street.`
+    }
+  ],
+  business: [
+    {
+      title: "Quarterly Planning Brief",
+      text: `Good morning, everyone. Today I want to focus on three decisions: where we are growing, where we are losing momentum, and what we will change before the next quarter begins.
 
-The room became quiet. Everyone heard the rain, the wind, and their own breathing. A few minutes later, the lights steadied again. The experiment continued, but the lesson had changed: sometimes a calm voice is what helps people think.`
-  },
-  {
-    title: "The Missing Trophy",
-    text: `The trophy was gone before the assembly began. It had stood on the table all morning, bright and impossible to miss. Now there was only a pale square in the dust where it had been.
+First, the good news. Customer retention improved by eight percent, and the education segment is becoming our strongest source of repeat revenue. That tells us the product is solving a real problem.
 
-The principal asked the students to sit down. Her voice was firm, but not angry. We are going to solve this carefully, she said. We will ask questions, check what we know, and avoid blaming anyone too quickly.
+Now the challenge. Our onboarding process is still too slow. If a new customer does not see value in the first week, the risk of churn doubles. We need a simpler path from sign-up to first success.
 
-That changed the room. People stopped whispering and started remembering. Leo had seen a box near the stage. Ivy had noticed a teacher carrying decorations. Ten minutes later, the trophy was found inside the wrong box, wrapped safely in blue paper.`
-  }
-];
+My proposal is direct. We reduce the onboarding steps, assign one owner to the first-week experience, and review the numbers every Friday. If we move quickly, this quarter can become a turning point rather than a warning sign.`
+    }
+  ]
+};
 
 const passageTitle = document.querySelector("#passageTitle");
 const readingText = document.querySelector("#readingText");
 const readingStatus = document.querySelector("#readingStatus");
 const readingProgress = document.querySelector("#readingProgress");
+const modeButtons = Array.from(document.querySelectorAll("[data-mode]"));
 const newPromptButton = document.querySelector("#newPromptButton");
 const recordButton = document.querySelector("#recordButton");
 const playButton = document.querySelector("#playButton");
@@ -71,13 +72,54 @@ let recognizedWordIndex = 0;
 let speechRecognizer;
 let shouldTrackSpeech = false;
 let timedScrollInterval;
+let currentMode = "story";
 
 function setPrompt() {
-  const index = Math.floor(Math.random() * passages.length);
-  renderPassage(passages[index]);
+  if (currentMode === "own") {
+    clearPassage();
+  } else {
+    const passages = passageGroups[currentMode];
+    const index = Math.floor(Math.random() * passages.length);
+    renderPassage(passages[index]);
+  }
+
   if (!mediaRecorder || mediaRecorder.state === "inactive") {
     resetAudience();
   }
+}
+
+function setMode(mode) {
+  currentMode = mode;
+  document.body.classList.toggle("business-mode", mode === "business");
+  document.body.classList.toggle("own-text-mode", mode === "own");
+
+  modeButtons.forEach(button => {
+    const isActive = button.dataset.mode === mode;
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-selected", String(isActive));
+  });
+
+  document.querySelector("#audience-title").textContent = mode === "business" ? "Meeting room" : "Classroom";
+  feedbackText.textContent = mode === "own"
+    ? "Speak your own text. I will judge vocal variety from pitch, volume, and pacing."
+    : "Record a short take and I will listen for variety in energy, pitch, and pace.";
+  setPrompt();
+}
+
+function clearPassage() {
+  passageTitle.textContent = "Own text";
+  readingText.innerHTML = "";
+  currentPassageWords = [];
+  wordElements = [];
+  recognizedWordIndex = 0;
+  readingProgress.style.width = "0%";
+  readingText.scrollTop = 0;
+  readingStatus.textContent = "";
+  readingStatus.classList.remove("warning");
+}
+
+function hasReadingPassage() {
+  return currentMode !== "own" && currentPassageWords.length > 0;
 }
 
 function normalizeWord(word) {
@@ -213,6 +255,8 @@ function stopTimedReadingScroll() {
 }
 
 function startReadingTracker() {
+  if (!hasReadingPassage()) return;
+
   const SpeechRecognition = getSpeechRecognitionConstructor();
 
   if (!SpeechRecognition) {
@@ -646,7 +690,7 @@ function analyzeRecording() {
     pitchMetric.textContent = "Need 20 seconds";
     paceMetric.textContent = "Need 20 seconds";
     setRecordingNotice("That take was under 20 seconds, so I did not score voice variety yet.", "warning");
-    feedbackText.textContent = "This take was too short to judge voice variety fairly. Try speaking for at least 20 seconds so the class can hear a real pattern.";
+    feedbackText.textContent = "This take was too short to judge voice variety fairly. Try speaking for at least 20 seconds so the audience can hear a real pattern.";
     return;
   }
 
@@ -680,7 +724,7 @@ function analyzeRecording() {
   );
 
   if (result.score >= 78) {
-    feedbackText.textContent = "The class stayed with you. Keep the shape, and now practice making the most important sentence even more deliberate.";
+    feedbackText.textContent = "The audience stayed with you. Keep the shape, and now practice making the most important sentence even more deliberate.";
   } else if (result.pitchScore < 45 && result.energyScore < 45) {
     feedbackText.textContent = "This sounded fairly monotone: both pitch and volume stayed narrow. Try choosing three key words and lifting either the pitch or volume on each one.";
   } else if (result.pitchScore < 45) {
@@ -713,7 +757,9 @@ async function startRecording() {
   speakingFrames = 0;
   quietFrames = 0;
   liveFrame = 0;
-  updateReadingProgress(0, "Listening for the words you read...");
+  if (hasReadingPassage()) {
+    updateReadingProgress(0, "Listening for the words you read...");
+  }
 
   mediaRecorder = new MediaRecorder(stream);
   mediaRecorder.addEventListener("dataavailable", event => chunks.push(event.data));
@@ -731,8 +777,10 @@ async function startRecording() {
   recordButton.textContent = "Stop Recording";
   recordButton.classList.add("recording");
   playButton.disabled = true;
-  setRecordingNotice("Recording. The class will listen for 20 seconds before judging variety.", "active");
-  feedbackText.textContent = "The class is listening first. After 20 seconds, they will start reacting to your voice variety.";
+  setRecordingNotice("Recording. The audience will listen for 20 seconds before judging variety.", "active");
+  feedbackText.textContent = currentMode === "own"
+    ? "Speak freely. After 20 seconds, the audience will start reacting to your voice variety."
+    : "The audience is listening first. After 20 seconds, they will start reacting to your voice variety.";
   updateListeningPeriod(0);
 }
 
@@ -787,10 +835,13 @@ function playRecording() {
 }
 
 newPromptButton.addEventListener("click", setPrompt);
+modeButtons.forEach(button => {
+  button.addEventListener("click", () => setMode(button.dataset.mode));
+});
 recordButton.addEventListener("click", toggleRecording);
 playButton.addEventListener("click", playRecording);
 
-setPrompt();
+setMode("story");
 drawIdleWave();
 
 const firstMicrophoneIssue = getMicrophoneIssue();
