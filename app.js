@@ -41,7 +41,10 @@ const waveform = document.querySelector("#waveform");
 const scoreValue = document.querySelector("#scoreValue");
 const energyMetric = document.querySelector("#energyMetric");
 const pitchMetric = document.querySelector("#pitchMetric");
-const paceMetric = document.querySelector("#paceMetric");
+const tempoMetric = document.querySelector("#tempoMetric");
+const pauseMetric = document.querySelector("#pauseMetric");
+const emphasisMetric = document.querySelector("#emphasisMetric");
+const clarityMetric = document.querySelector("#clarityMetric");
 const feedbackText = document.querySelector("#feedbackText");
 const scoreRing = document.querySelector(".score-ring");
 const attentionMeter = document.querySelector("#attentionMeter");
@@ -432,6 +435,29 @@ function describeMetric(score, lowLabel, midLabel, highLabel, detail) {
   return detail ? `${label}: ${detail}` : label;
 }
 
+function countEmphasisPeaks(dbValues, frameDuration) {
+  if (dbValues.length < 4) return 0;
+  const threshold = mean(dbValues) + standardDeviation(dbValues) * 0.85;
+  const minGapFrames = Math.max(1, Math.round(0.35 / Math.max(frameDuration, 0.01)));
+  let peaks = 0;
+  let framesSincePeak = minGapFrames;
+
+  dbValues.forEach((value, index, values) => {
+    const previous = values[index - 1] ?? value;
+    const next = values[index + 1] ?? value;
+    const isPeak = value > threshold && value >= previous && value >= next;
+
+    if (isPeak && framesSincePeak >= minGapFrames) {
+      peaks += 1;
+      framesSincePeak = 0;
+    } else {
+      framesSincePeak += 1;
+    }
+  });
+
+  return peaks;
+}
+
 function setKidStates(states) {
   kids.forEach((kid, index) => {
     kid.classList.remove("ready", "distracted", "unsure", "curious", "focused", "delighted");
@@ -556,25 +582,54 @@ function analyzeProsody(rmsValues, pitches, duration) {
   }
 
   const pauseDurations = getRuns(speechFlags, false, frameDuration);
+  const speechDurations = getRuns(speechFlags, true, frameDuration);
   const strategicPauses = pauseDurations.filter(pause => pause >= 0.35 && pause <= 2.4);
   const longPauses = pauseDurations.filter(pause => pause > 2.4);
   const pausesPerMinute = strategicPauses.length / Math.max(0.1, duration / 60);
   const pauseVariation = standardDeviation(strategicPauses);
+  const averageSpeechRun = mean(speechDurations);
   const speechRatioScore = bandScore(speechRatio, 0.62, 0.88, 0.35, 0.98);
+  const speechRunScore = bandScore(averageSpeechRun, 1.4, 4.8, 0.4, 9);
   const pauseFrequencyScore = bandScore(pausesPerMinute, 3, 9, 0, 16);
   const pauseVariationScore = strategicPauses.length >= 2 ? linearScore(pauseVariation, 0.12, 0.75) : 28;
   const longPausePenalty = Math.min(30, longPauses.length * 10);
-  let pacingScore = clamp(
-    speechRatioScore * 0.42 + pauseFrequencyScore * 0.4 + pauseVariationScore * 0.18 - longPausePenalty,
+  const tempoScore = clamp(
+    speechRatioScore * 0.62 + speechRunScore * 0.38,
+    0,
+    100
+  );
+  let pauseScore = clamp(
+    pauseFrequencyScore * 0.68 + pauseVariationScore * 0.32 - longPausePenalty,
     0,
     100
   );
 
   if (!strategicPauses.length) {
-    pacingScore = Math.min(pacingScore, 42);
+    pauseScore = Math.min(pauseScore, 42);
   }
 
-  let score = pitchScore * 0.45 + energyScore * 0.3 + pacingScore * 0.25;
+  const emphasisPeaks = countEmphasisPeaks(speechDb, frameDuration);
+  const emphasisPeaksPerMinute = emphasisPeaks / Math.max(0.1, duration / 60);
+  const emphasisScore = clamp(
+    bandScore(emphasisPeaksPerMinute, 5, 14, 0, 24) * 0.58 +
+      linearScore(energyRange, 4.5, 15) * 0.27 +
+      linearScore(pitchMoves / Math.max(1, duration / 20), 1, 8) * 0.15,
+    0,
+    100
+  );
+
+  const pitchTrackingRatio = pitches.length / Math.max(1, speechRms.length);
+  const clippingRatio = rmsValues.filter(value => value > 0.92).length / Math.max(1, rmsValues.length);
+  const clarityScore = clamp(
+    linearScore(pitchTrackingRatio, 0.12, 0.58) * 0.55 +
+      speechRatioScore * 0.3 +
+      (100 - linearScore(clippingRatio, 0.01, 0.08)) * 0.15,
+    0,
+    100
+  );
+
+  const pacingScore = tempoScore * 0.58 + pauseScore * 0.42;
+  let score = pitchScore * 0.36 + energyScore * 0.24 + pacingScore * 0.22 + emphasisScore * 0.12 + clarityScore * 0.06;
 
   if (pitchScore < 45 && energyScore < 45) {
     score = Math.min(score, 48);
@@ -599,6 +654,14 @@ function analyzeProsody(rmsValues, pitches, duration) {
     energyRange,
     speechRatio,
     pitchSamples: semitoneValues.length,
+    tempoScore,
+    pauseScore,
+    emphasisScore,
+    clarityScore,
+    averageSpeechRun,
+    emphasisPeaks,
+    emphasisPeaksPerMinute,
+    pitchTrackingRatio,
     strategicPauses: strategicPauses.length,
     pausesPerMinute
   };
@@ -706,7 +769,10 @@ function analyzeRecording() {
     setKidStates(["ready", "curious", "ready", "curious", "ready"]);
     energyMetric.textContent = "Need 5 seconds";
     pitchMetric.textContent = "Need 5 seconds";
-    paceMetric.textContent = "Need 5 seconds";
+    tempoMetric.textContent = "Need 5 seconds";
+    pauseMetric.textContent = "Need 5 seconds";
+    emphasisMetric.textContent = "Need 5 seconds";
+    clarityMetric.textContent = "Need 5 seconds";
     setRecordingNotice("That take was under 5 seconds, so I did not score voice variety yet.", "warning");
     feedbackText.textContent = "This take was too short to judge voice variety fairly. Try speaking for at least 5 seconds so the audience can hear a real pattern.";
     return;
@@ -733,12 +799,33 @@ function analyzeRecording() {
         "Expressive",
         `${result.pitchRange.toFixed(1)} st range`
       );
-  paceMetric.textContent = describeMetric(
-    result.pacingScore,
+  tempoMetric.textContent = describeMetric(
+    result.tempoScore,
+    "Uneven flow",
+    "Moderate flow",
+    "Steady flow",
+    `${Math.round(result.speechRatio * 100)}% speech`
+  );
+  pauseMetric.textContent = describeMetric(
+    result.pauseScore,
     "Needs clearer pauses",
-    "Some pacing",
-    "Good pacing",
-    `${result.strategicPauses} pauses`
+    "Some pause shape",
+    "Good pause shape",
+    `${result.strategicPauses} pauses, ${result.pausesPerMinute.toFixed(1)}/min`
+  );
+  emphasisMetric.textContent = describeMetric(
+    result.emphasisScore,
+    "Few peaks",
+    "Some emphasis",
+    "Clear emphasis",
+    `${result.emphasisPeaks} peaks`
+  );
+  clarityMetric.textContent = describeMetric(
+    result.clarityScore,
+    "Signal unclear",
+    "Usable",
+    "Clear signal",
+    `${Math.round(result.pitchTrackingRatio * 100)}% voice trace`
   );
 
   if (result.score >= 78) {
