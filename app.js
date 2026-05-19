@@ -29,7 +29,7 @@ const passageTitle = document.querySelector("#passageTitle");
 const readingText = document.querySelector("#readingText");
 const readingStatus = document.querySelector("#readingStatus");
 const readingProgress = document.querySelector("#readingProgress");
-const modeButtons = Array.from(document.querySelectorAll("[data-mode]"));
+const modeInputs = Array.from(document.querySelectorAll("input[name='practiceMode']"));
 const newPromptButton = document.querySelector("#newPromptButton");
 const recordButton = document.querySelector("#recordButton");
 const playButton = document.querySelector("#playButton");
@@ -46,7 +46,7 @@ const scoreRing = document.querySelector(".score-ring");
 const attentionMeter = document.querySelector("#attentionMeter");
 const attentionLabel = document.querySelector("#attentionLabel");
 const kids = Array.from(document.querySelectorAll("[data-kid]"));
-const MIN_FEEDBACK_SECONDS = 20;
+const MIN_FEEDBACK_SECONDS = 5;
 const LIVE_SAMPLE_WINDOW = 1200;
 const LIVE_PITCH_WINDOW = 360;
 
@@ -93,10 +93,8 @@ function setMode(mode) {
   document.body.classList.toggle("business-mode", mode === "business");
   document.body.classList.toggle("own-text-mode", mode === "own");
 
-  modeButtons.forEach(button => {
-    const isActive = button.dataset.mode === mode;
-    button.classList.toggle("active", isActive);
-    button.setAttribute("aria-selected", String(isActive));
+  modeInputs.forEach(input => {
+    input.checked = input.value === mode;
   });
 
   document.querySelector("#audience-title").textContent = mode === "business" ? "Meeting room" : "Classroom";
@@ -686,11 +684,11 @@ function analyzeRecording() {
     attentionLabel.textContent = "Too short to judge";
     attentionMeter.style.width = "42%";
     setKidStates(["ready", "curious", "ready", "curious", "ready"]);
-    energyMetric.textContent = "Need 20 seconds";
-    pitchMetric.textContent = "Need 20 seconds";
-    paceMetric.textContent = "Need 20 seconds";
-    setRecordingNotice("That take was under 20 seconds, so I did not score voice variety yet.", "warning");
-    feedbackText.textContent = "This take was too short to judge voice variety fairly. Try speaking for at least 20 seconds so the audience can hear a real pattern.";
+    energyMetric.textContent = "Need 5 seconds";
+    pitchMetric.textContent = "Need 5 seconds";
+    paceMetric.textContent = "Need 5 seconds";
+    setRecordingNotice("That take was under 5 seconds, so I did not score voice variety yet.", "warning");
+    feedbackText.textContent = "This take was too short to judge voice variety fairly. Try speaking for at least 5 seconds so the audience can hear a real pattern.";
     return;
   }
 
@@ -777,10 +775,10 @@ async function startRecording() {
   recordButton.textContent = "Stop Recording";
   recordButton.classList.add("recording");
   playButton.disabled = true;
-  setRecordingNotice("Recording. The audience will listen for 20 seconds before judging variety.", "active");
+  setRecordingNotice("Recording. The audience will listen for 5 seconds before judging variety.", "active");
   feedbackText.textContent = currentMode === "own"
-    ? "Speak freely. After 20 seconds, the audience will start reacting to your voice variety."
-    : "The audience is listening first. After 20 seconds, they will start reacting to your voice variety.";
+    ? "Speak freely. After 5 seconds, the audience will start reacting to your voice variety."
+    : "The audience is listening first. After 5 seconds, they will start reacting to your voice variety.";
   updateListeningPeriod(0);
 }
 
@@ -835,8 +833,10 @@ function playRecording() {
 }
 
 newPromptButton.addEventListener("click", setPrompt);
-modeButtons.forEach(button => {
-  button.addEventListener("click", () => setMode(button.dataset.mode));
+modeInputs.forEach(input => {
+  input.addEventListener("change", () => {
+    if (input.checked) setMode(input.value);
+  });
 });
 recordButton.addEventListener("click", toggleRecording);
 playButton.addEventListener("click", playRecording);

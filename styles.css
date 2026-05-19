@@ -123,20 +123,45 @@ h3 {
   background: #f4f7f6;
 }
 
-.mode-button {
+.mode-switch legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.mode-switch input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mode-switch label {
+  display: grid;
   min-height: 36px;
-  border: 0;
+  place-items: center;
+  min-height: 36px;
   border-radius: 6px;
   background: transparent;
   color: var(--muted);
   cursor: pointer;
   font-weight: 850;
+  text-align: center;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
 }
 
-.mode-button.active {
+.mode-switch input:checked + label {
   background: var(--panel);
   color: var(--accent-dark);
   box-shadow: 0 5px 16px rgba(23, 33, 43, 0.1);
+}
+
+.mode-switch input:focus-visible + label {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .prompt-card {
