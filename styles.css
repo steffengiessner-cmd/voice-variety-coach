@@ -184,6 +184,10 @@ body.is-recording .mode-switch {
   display: none;
 }
 
+body.is-recording .prompt-tools {
+  display: none;
+}
+
 body.is-recording .own-text-editor {
   display: none;
 }
