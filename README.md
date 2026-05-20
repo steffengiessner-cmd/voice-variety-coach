@@ -2,6 +2,8 @@
 
 A small browser app for practicing vocal variety. It gives you a speaking prompt, records a short take, plays it back, and estimates variety in energy, pitch movement, and pacing.
 
+The shared GitHub Pages version runs fully in the browser. The local Mac version can also use the optional Praat/Parselmouth helper for stronger acoustic statistics.
+
 ## Run It Locally
 
 Because microphone access works best on `localhost`, start a small local server from this folder:
@@ -36,3 +38,5 @@ In GitHub:
 3. Choose **Deploy from a branch**.
 4. Select the `main` branch and root folder.
 5. Save.
+
+The online version will use browser-based feedback. To use the local Praat analysis, run the backend helper on your Mac and open the app through `localhost`.

@@ -9,6 +9,26 @@ From behind a pumpkin cart, a tiny mouse lifted one paw. I borrowed it, she sque
 Then the river began to sing. Its voice was soft at first, then bright, then wild with joy. The dragon lowered his head and whispered, perhaps the bell belongs to everyone tonight.
 
 So the mouse rang the bell once more. The dragon hummed along, the mayor clapped in rhythm, and even the baker laughed so loudly that the buns shook sugar into the street.`
+    },
+    {
+      title: "The Clockmaker and the Storm",
+      text: `At noon, the clockmaker raised both hands and shouted, Stop the tower clock! The storm is coming early, and the whole town must hear the warning before the sky turns black.
+
+The mayor frowned. That clock has never stopped in ninety years, she said. If we stop it now, everyone will panic. But a young runner pointed to the hills and whispered, Look. The clouds are moving like a wall.
+
+The clockmaker climbed the tower steps, slow at first, then faster as the wind pushed against the windows. He pulled the golden lever. The bells rang once, twice, then seven wild times.
+
+Doors opened. People looked up. The mayor took a deep breath and called, To the shelter, calmly and quickly. By sunset, the storm had passed, and the silent clock became the bravest sound the town had ever heard.`
+    },
+    {
+      title: "The Tiny Theater Mystery",
+      text: `The curtain rose, and Princess Lila stepped forward in a sparkling blue cape. Tonight, she announced, we present the grand mystery of the missing crown.
+
+Behind the curtain, Max the detective whispered, The crown is not missing. It is on your head. Lila froze. The audience gasped. The stage manager waved both arms and mouthed, Keep going.
+
+So Lila lifted her chin and said, Exactly. The mystery is not where the crown is, but who is brave enough to wear it. Max blinked. The stage manager stopped waving. Someone in the front row laughed.
+
+Then the smallest actor marched on stage and declared, I am brave enough. The room went quiet, then burst into applause. The mystery had changed, the story had changed, and somehow the ending was better than the plan.`
     }
   ],
   business: [
@@ -21,15 +41,39 @@ First, the good news. Customer retention improved by eight percent, and the educ
 Now the challenge. Our onboarding process is still too slow. If a new customer does not see value in the first week, the risk of churn doubles. We need a simpler path from sign-up to first success.
 
 My proposal is direct. We reduce the onboarding steps, assign one owner to the first-week experience, and review the numbers every Friday. If we move quickly, this quarter can become a turning point rather than a warning sign.`
+    },
+    {
+      title: "Product Launch Update",
+      text: `Thank you for joining on short notice. We are three weeks from launch, and the situation is promising, but not simple.
+
+The product itself is ready. The early testers understand the value quickly, and their comments are more specific than we expected. That is a strong signal.
+
+The risk is awareness. Our target customers like the idea once they see it, but too few of them know that it exists. A quiet launch would waste a good product.
+
+So the next step is clear. We keep the launch date, sharpen the message, and focus the first campaign on one audience: team leaders who need faster onboarding. If we speak to everyone, we will sound vague. If we speak to them, we can sound useful.`
+    },
+    {
+      title: "Team Change Announcement",
+      text: `I want to talk about a change in how we work together. This is not a crisis, and it is not just an administrative update. It is a chance to remove friction.
+
+Over the last two months, several projects slowed down because decisions were moving through too many people. Everyone was trying to help, but the process became heavier than the work itself.
+
+Starting next Monday, every project will have one decision owner, one support lead, and one weekly checkpoint. That means fewer meetings, clearer responsibility, and faster movement when something blocks us.
+
+This will feel different at first. Some of us will need to step back, and others will need to step forward. But if we use the new structure well, we should gain time, focus, and a calmer rhythm.`
     }
   ]
 };
 
 const passageTitle = document.querySelector("#passageTitle");
 const readingText = document.querySelector("#readingText");
+const ownTextInput = document.querySelector("#ownTextInput");
 const readingStatus = document.querySelector("#readingStatus");
 const readingProgress = document.querySelector("#readingProgress");
 const modeInputs = Array.from(document.querySelectorAll("input[name='practiceMode']"));
+const fontSizeInputs = Array.from(document.querySelectorAll("input[name='readingSize']"));
+const scrollModeInputs = Array.from(document.querySelectorAll("input[name='scrollMode']"));
+const audienceTypeInputs = Array.from(document.querySelectorAll("input[name='audienceType']"));
 const newPromptButton = document.querySelector("#newPromptButton");
 const recordButton = document.querySelector("#recordButton");
 const playButton = document.querySelector("#playButton");
@@ -46,6 +90,7 @@ const pauseMetric = document.querySelector("#pauseMetric");
 const emphasisMetric = document.querySelector("#emphasisMetric");
 const clarityMetric = document.querySelector("#clarityMetric");
 const feedbackText = document.querySelector("#feedbackText");
+const feedbackBox = document.querySelector(".feedback-box");
 const scoreRing = document.querySelector(".score-ring");
 const attentionMeter = document.querySelector("#attentionMeter");
 const attentionLabel = document.querySelector("#attentionLabel");
@@ -53,6 +98,9 @@ const kids = Array.from(document.querySelectorAll("[data-kid]"));
 const MIN_FEEDBACK_SECONDS = 5;
 const LIVE_SAMPLE_WINDOW = 1200;
 const LIVE_PITCH_WINDOW = 360;
+const PRAAT_ANALYZE_URL = "http://127.0.0.1:8000/analyze";
+const PRAAT_LIVE_INTERVAL_SECONDS = 5;
+const PRAAT_LIVE_WINDOW_SECONDS = 8;
 
 const canvasContext = waveform.getContext("2d");
 let mediaRecorder;
@@ -78,9 +126,20 @@ let speechRecognizer;
 let shouldTrackSpeech = false;
 let timedScrollInterval;
 let currentMode = "story";
+let currentScrollMode = "voice";
+let currentAudienceType = "duo";
+let liveAudioProcessor;
+let liveMonitorGain;
+let livePcmChunks = [];
+let livePcmSampleCount = 0;
+let livePcmTotalSamples = 0;
+let livePraatInterval;
+let isLivePraatAnalyzing = false;
 
 function setPrompt() {
   if (currentMode === "own") {
+    renderOwnText();
+  } else if (currentMode === "audience") {
     clearPassage();
   } else {
     const passages = passageGroups[currentMode];
@@ -95,18 +154,104 @@ function setPrompt() {
 
 function setMode(mode) {
   currentMode = mode;
-  document.body.classList.toggle("business-mode", mode === "business");
   document.body.classList.toggle("own-text-mode", mode === "own");
+  document.body.classList.toggle("audience-only-mode", mode === "audience");
 
   modeInputs.forEach(input => {
     input.checked = input.value === mode;
   });
 
-  document.querySelector("#audience-title").textContent = mode === "business" ? "Meeting room" : "Classroom";
-  feedbackText.textContent = mode === "own"
-    ? "Speak your own text. I will judge vocal variety from pitch, volume, and pacing."
-    : "Record a short take and I will listen for variety in energy, pitch, and pace.";
+  updateAudiencePresentation();
+
+  if (mode === "own") {
+    feedbackText.textContent = "Speak your own text. I will judge vocal variety from pitch, volume, and pacing.";
+  } else if (mode === "audience") {
+    feedbackText.textContent = "Speak freely to the audience. I will judge vocal variety from pitch, volume, tempo, pauses, and emphasis.";
+  } else {
+    feedbackText.textContent = "Record a short take and I will listen for variety in energy, pitch, and pace.";
+  }
+
   setPrompt();
+}
+
+function setAudienceType(type) {
+  currentAudienceType = type;
+  audienceTypeInputs.forEach(input => {
+    input.checked = input.value === type;
+  });
+  updateAudiencePresentation();
+  resetAudience();
+}
+
+function updateAudiencePresentation() {
+  const effectiveType = currentMode === "business"
+    ? "business"
+    : currentMode === "audience"
+      ? currentAudienceType
+      : "kids";
+
+  document.body.classList.toggle("business-mode", effectiveType === "business");
+  document.body.classList.toggle("duo-audience-mode", effectiveType === "duo");
+
+  const title = effectiveType === "business"
+    ? "Meeting room"
+    : effectiveType === "duo"
+      ? "Antonie & Steffen"
+      : "Classroom";
+  document.querySelector("#audience-title").textContent = title;
+}
+
+function updateOwnTextVisibility() {
+  const hasText = ownTextInput.value.trim().length > 0;
+  document.body.classList.toggle("own-text-has-passage", hasText);
+}
+
+function renderOwnText() {
+  const text = ownTextInput.value.trim();
+  if (!text) {
+    clearPassage();
+    passageTitle.textContent = "Own text";
+    readingStatus.textContent = "Paste a text above, or record freely without a reading text.";
+    readingStatus.classList.remove("warning");
+    updateOwnTextVisibility();
+    return;
+  }
+
+  renderPassage({
+    title: "Own text",
+    text
+  });
+  readingStatus.textContent = "Own text ready.";
+  readingStatus.classList.remove("warning");
+  updateOwnTextVisibility();
+}
+
+function setReadingSize(size) {
+  document.body.classList.remove("reading-size-small", "reading-size-medium", "reading-size-large");
+  document.body.classList.add(`reading-size-${size}`);
+
+  fontSizeInputs.forEach(input => {
+    input.checked = input.value === size;
+  });
+}
+
+function setScrollMode(mode) {
+  currentScrollMode = mode;
+  scrollModeInputs.forEach(input => {
+    input.checked = input.value === mode;
+  });
+
+  if (mediaRecorder && mediaRecorder.state === "recording" && hasReadingPassage()) {
+    startReadingTracker();
+  } else if (hasReadingPassage()) {
+    const messages = {
+      voice: "Ready to follow your voice.",
+      auto: "Ready to auto-scroll through the text.",
+      manual: "Manual scrolling selected."
+    };
+    readingStatus.textContent = messages[mode];
+    readingStatus.classList.remove("warning");
+  }
 }
 
 function clearPassage() {
@@ -122,7 +267,7 @@ function clearPassage() {
 }
 
 function hasReadingPassage() {
-  return currentMode !== "own" && currentPassageWords.length > 0;
+  return currentPassageWords.length > 0;
 }
 
 function normalizeWord(word) {
@@ -200,17 +345,19 @@ function matchTranscriptToPassage(transcript) {
   const spokenWords = transcript.split(/\s+/).map(normalizeWord).filter(Boolean);
   if (!spokenWords.length) return recognizedWordIndex;
 
-  let cursor = 0;
-  spokenWords.forEach(spokenWord => {
-    for (let index = cursor; index < Math.min(currentPassageWords.length, cursor + 14); index += 1) {
+  let cursor = Math.max(0, recognizedWordIndex - 6);
+  let bestCursor = recognizedWordIndex;
+  spokenWords.slice(-36).forEach(spokenWord => {
+    for (let index = cursor; index < Math.min(currentPassageWords.length, cursor + 24); index += 1) {
       if (wordsSimilar(spokenWord, currentPassageWords[index])) {
         cursor = index + 1;
+        bestCursor = Math.max(bestCursor, cursor);
         break;
       }
     }
   });
 
-  return Math.max(recognizedWordIndex, cursor);
+  return Math.max(recognizedWordIndex, bestCursor);
 }
 
 function updateReadingProgress(nextIndex, message) {
@@ -227,9 +374,9 @@ function updateReadingProgress(nextIndex, message) {
     : 0;
   readingProgress.style.width = `${progress}%`;
 
-  const activeWord = wordElements[Math.max(0, currentIndex - 2)];
+  const activeWord = wordElements[Math.min(wordElements.length - 1, Math.max(0, currentIndex + 8))];
   if (activeWord) {
-    activeWord.scrollIntoView({ block: "center", behavior: "smooth" });
+    activeWord.scrollIntoView({ block: "center", behavior: "auto" });
   }
 
   readingStatus.textContent = message || `Following your reading: ${recognizedWordIndex} / ${currentPassageWords.length} words`;
@@ -244,12 +391,13 @@ function startTimedReadingScroll() {
   clearInterval(timedScrollInterval);
   timedScrollInterval = setInterval(() => {
     if (!mediaRecorder || mediaRecorder.state !== "recording") return;
-    const estimatedWords = Math.floor(getElapsedSeconds() * 2.25);
+    const targetDuration = clamp(currentPassageWords.length / 1.85, 40, 75);
+    const estimatedWords = Math.floor((getElapsedSeconds() / targetDuration) * currentPassageWords.length);
     updateReadingProgress(
       estimatedWords,
-      `Timed scroll: ${Math.min(estimatedWords, currentPassageWords.length)} / ${currentPassageWords.length} words`
+      `Auto scroll: ${Math.min(estimatedWords, currentPassageWords.length)} / ${currentPassageWords.length} words`
     );
-  }, 700);
+  }, 500);
 }
 
 function stopTimedReadingScroll() {
@@ -260,16 +408,29 @@ function stopTimedReadingScroll() {
 function startReadingTracker() {
   if (!hasReadingPassage()) return;
 
-  const SpeechRecognition = getSpeechRecognitionConstructor();
+  stopReadingTracker();
 
-  if (!SpeechRecognition) {
-    readingStatus.textContent = "Word recognition is not available in this browser, so I will scroll the text at a steady reading pace.";
+  if (currentScrollMode === "manual") {
+    readingStatus.textContent = "Manual scrolling selected. Move the text yourself while recording.";
+    readingStatus.classList.remove("warning");
+    return;
+  }
+
+  if (currentScrollMode === "auto") {
+    readingStatus.textContent = "Auto scroll selected. The text will move slowly through the take.";
     readingStatus.classList.remove("warning");
     startTimedReadingScroll();
     return;
   }
 
-  stopReadingTracker();
+  const SpeechRecognition = getSpeechRecognitionConstructor();
+
+  if (!SpeechRecognition) {
+    readingStatus.textContent = "Voice following is not available in this browser. Choose Auto or Manual.";
+    readingStatus.classList.add("warning");
+    return;
+  }
+
   shouldTrackSpeech = true;
   speechRecognizer = new SpeechRecognition();
   speechRecognizer.continuous = true;
@@ -280,18 +441,17 @@ function startReadingTracker() {
     const transcript = Array.from(event.results)
       .map(result => result[0].transcript)
       .join(" ");
-    updateReadingProgress(matchTranscriptToPassage(transcript));
+    const matchedWords = matchTranscriptToPassage(transcript);
+    updateReadingProgress(matchedWords);
   });
 
   speechRecognizer.addEventListener("error", event => {
     if (event.error === "not-allowed") {
-      readingStatus.textContent = "Speech recognition was blocked, so I will scroll the text at a steady reading pace.";
-      startTimedReadingScroll();
+      readingStatus.textContent = "Voice following was blocked. Choose Auto or Manual.";
     } else {
-      readingStatus.textContent = "Speech recognition paused, so I will scroll the text at a steady reading pace.";
-      startTimedReadingScroll();
+      readingStatus.textContent = "Voice following paused. Choose Auto if you want steady scrolling.";
     }
-    readingStatus.classList.remove("warning");
+    readingStatus.classList.add("warning");
   });
 
   speechRecognizer.addEventListener("end", () => {
@@ -299,9 +459,8 @@ function startReadingTracker() {
     try {
       speechRecognizer.start();
     } catch (error) {
-      readingStatus.textContent = "Speech recognition paused, so I will scroll the text at a steady reading pace.";
-      readingStatus.classList.remove("warning");
-      startTimedReadingScroll();
+      readingStatus.textContent = "Voice following paused. Choose Auto if you want steady scrolling.";
+      readingStatus.classList.add("warning");
     }
   });
 
@@ -309,9 +468,8 @@ function startReadingTracker() {
     speechRecognizer.start();
     updateReadingProgress(0, "Listening for the words you read...");
   } catch (error) {
-    readingStatus.textContent = "Word recognition could not start, so I will scroll the text at a steady reading pace.";
-    readingStatus.classList.remove("warning");
-    startTimedReadingScroll();
+    readingStatus.textContent = "Voice following could not start. Choose Auto or Manual.";
+    readingStatus.classList.add("warning");
   }
 }
 
@@ -435,6 +593,186 @@ function describeMetric(score, lowLabel, midLabel, highLabel, detail) {
   return detail ? `${label}: ${detail}` : label;
 }
 
+function getQualityClass(score) {
+  if (score == null) return "quality-neutral";
+  if (score < 45) return "quality-low";
+  if (score < 72) return "quality-mid";
+  return "quality-high";
+}
+
+function setQuality(element, score) {
+  const card = element?.closest("article") || element;
+  if (!card) return;
+  card.classList.remove("quality-low", "quality-mid", "quality-high", "quality-neutral");
+  card.classList.add(getQualityClass(score));
+}
+
+function setScoreVisual(score) {
+  const qualityClass = getQualityClass(score);
+  const color = qualityClass === "quality-high"
+    ? "var(--quality-high)"
+    : qualityClass === "quality-mid"
+      ? "var(--quality-mid)"
+      : "var(--quality-low)";
+  scoreRing.style.background = `conic-gradient(${color} ${score * 3.6}deg, #dcece9 0deg)`;
+  setQuality(feedbackBox, score);
+}
+
+function clearQualityColors() {
+  [pitchMetric, energyMetric, tempoMetric, pauseMetric, emphasisMetric, clarityMetric, feedbackBox].forEach(element => {
+    setQuality(element, null);
+  });
+  scoreRing.style.background = "conic-gradient(var(--accent) 0deg, #dcece9 0deg)";
+}
+
+function semitoneRangeFromHz(meanHz, rangeHz) {
+  if (!meanHz || !rangeHz || rangeHz <= 0) return null;
+  const low = meanHz - rangeHz / 2;
+  const high = meanHz + rangeHz / 2;
+  if (low <= 0 || high <= low) return null;
+  return 12 * Math.log2(high / low);
+}
+
+function makeCoachMetric(score, lowLabel, midLabel, highLabel, advice) {
+  return {
+    score,
+    label: score < 45 ? lowLabel : score < 72 ? midLabel : highLabel,
+    advice
+  };
+}
+
+function classifyPraatFeedback(result) {
+  const pitchMean = result.pitch?.meanHz;
+  const pitchRangeHz = result.pitch?.rangeHzP10P90;
+  const pitchRangeSt = semitoneRangeFromHz(pitchMean, pitchRangeHz);
+  const pitchFrames = result.pitch?.trackedFrames ?? 0;
+  const volumeSd = result.volume?.sdDb;
+  const volumeRange = result.volume?.rangeDbP05P95;
+  const speechRatio = result.tempo?.speechRatio;
+  const pauseCount = result.pauses?.count ?? 0;
+  const pausesPerMinute = result.pauses?.perMinute ?? 0;
+  const longPauseCount = result.pauses?.longPauseCount ?? 0;
+  const peaksPerMinute = result.emphasis?.peaksPerMinute ?? 0;
+  const clarityRatio = result.clarity?.pitchTrackingRatio;
+
+  const pitch = !pitchRangeSt || pitchFrames < 8
+    ? makeCoachMetric(38, "Pitch unclear", "Pitch unclear", "Pitch unclear", "speak a little longer and keep the microphone steady")
+    : makeCoachMetric(
+        pitchRangeSt < 3.5 ? 32 : pitchRangeSt < 7 ? 64 : pitchRangeSt < 13 ? 88 : 74,
+        "Low pitch variety",
+        "Some pitch variety",
+        pitchRangeSt < 13 ? "Good pitch variety" : "Very animated pitch",
+        "let important words rise or fall more clearly"
+      );
+
+  const volume = volumeSd == null || volumeRange == null
+    ? makeCoachMetric(38, "Volume unclear", "Volume unclear", "Volume unclear", "keep a steady distance from the microphone")
+    : makeCoachMetric(
+        volumeSd < 2 || volumeRange < 5 ? 34 : volumeSd < 4.5 || volumeRange < 10 ? 66 : volumeRange < 18 ? 86 : 76,
+        "Low volume contrast",
+        "Some volume contrast",
+        volumeRange < 18 ? "Good volume contrast" : "Very strong volume contrast",
+        "make key words a little stronger and less important words lighter"
+      );
+
+  const tempo = speechRatio == null
+    ? makeCoachMetric(38, "Pace unclear", "Pace unclear", "Pace unclear", "speak a little longer")
+    : makeCoachMetric(
+        speechRatio < 0.45 ? 46 : speechRatio > 0.93 ? 42 : speechRatio > 0.88 ? 62 : 82,
+        speechRatio < 0.45 ? "Flow has many gaps" : "Rushed pace",
+        "Mostly steady pace",
+        "Good pace variety",
+        speechRatio > 0.88
+          ? "slow down around important ideas"
+          : "change pace between setup, contrast, and conclusion"
+      );
+
+  let pauseScore = 34;
+  let pauseLabel = "Needs clearer pauses";
+  if (longPauseCount > 0) {
+    pauseScore = 48;
+    pauseLabel = "One pause may be too long";
+  } else if (pauseCount > 0 && pausesPerMinute <= 12) {
+    pauseScore = 84;
+    pauseLabel = "Good pause shape";
+  } else if (pauseCount > 0 && pausesPerMinute <= 18) {
+    pauseScore = 64;
+    pauseLabel = "Many short pauses";
+  } else if (pauseCount > 0) {
+    pauseScore = 46;
+    pauseLabel = "Too many pauses";
+  }
+  const pauses = makeCoachMetric(
+    pauseScore,
+    pauseLabel,
+    pauseLabel,
+    pauseLabel,
+    "add one clean pause before or after an important sentence"
+  );
+
+  const emphasis = makeCoachMetric(
+    peaksPerMinute < 4 ? 34 : peaksPerMinute < 18 ? 84 : 68,
+    "Few emphasized moments",
+    peaksPerMinute < 18 ? "Clear emphasis" : "Very frequent emphasis",
+    peaksPerMinute < 18 ? "Clear emphasis" : "Very frequent emphasis",
+    "choose two or three key words to land more strongly"
+  );
+
+  const clarity = clarityRatio == null
+    ? makeCoachMetric(38, "Signal unclear", "Signal unclear", "Signal unclear", "move slightly closer to the microphone")
+    : makeCoachMetric(
+        clarityRatio < 0.2 ? 36 : clarityRatio < 0.55 ? 64 : 86,
+        "Voice signal unclear",
+        "Voice signal usable",
+        "Voice signal clear",
+        "speak cleanly and keep a stable microphone position"
+      );
+
+  const overall = Math.round(clamp(
+    pitch.score * 0.3 +
+      volume.score * 0.22 +
+      tempo.score * 0.18 +
+      pauses.score * 0.14 +
+      emphasis.score * 0.12 +
+      clarity.score * 0.04,
+    0,
+    100
+  ));
+  const summary = overall < 45
+    ? "Low voice variety"
+    : overall < 72
+      ? "Some voice variety"
+      : "Good voice variety";
+  const areas = [
+    ["pitch", pitch],
+    ["volume", volume],
+    ["tempo", tempo],
+    ["pauses", pauses],
+    ["emphasis", emphasis],
+    ["clarity", clarity]
+  ];
+  const [focusName, focus] = [...areas].sort((a, b) => a[1].score - b[1].score)[0];
+  const strengths = areas
+    .filter(([, area]) => area.score >= 72)
+    .map(([name]) => name)
+    .filter(name => name !== "clarity");
+  const strengthText = strengths.length
+    ? `Strongest area: ${strengths.slice(0, 2).join(" and ")}.`
+    : "No strong contrast yet.";
+
+  return {
+    score: overall,
+    summary,
+    pitch,
+    volume,
+    tempo,
+    pauses,
+    emphasis,
+    clarity,
+    feedback: `${summary}. ${strengthText} Next, work on ${focusName}: ${focus.advice}.`
+  };
+}
+
 function countEmphasisPeaks(dbValues, frameDuration) {
   if (dbValues.length < 4) return 0;
   const threshold = mean(dbValues) + standardDeviation(dbValues) * 0.85;
@@ -504,7 +842,19 @@ function getMicrophoneIssue() {
     return "This browser can access the microphone but cannot record audio here. Try a newer Safari or Chrome.";
   }
 
+  if (!getAudioContextConstructor()) {
+    return "This browser cannot analyze microphone audio here. Try a newer Safari or Chrome.";
+  }
+
   return "";
+}
+
+function getAudioContextConstructor() {
+  return window.AudioContext || window.webkitAudioContext;
+}
+
+function canUseLocalPraat() {
+  return ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
 }
 
 function getRecorderOptions() {
@@ -519,6 +869,298 @@ function getRecorderOptions() {
 
   const supportedType = mimeTypes.find(type => MediaRecorder.isTypeSupported(type));
   return supportedType ? { mimeType: supportedType } : {};
+}
+
+function encodeWav(audioBuffer) {
+  const channelCount = audioBuffer.numberOfChannels;
+  const sampleRate = audioBuffer.sampleRate;
+  const samples = audioBuffer.length;
+  const bytesPerSample = 2;
+  const blockAlign = channelCount * bytesPerSample;
+  const buffer = new ArrayBuffer(44 + samples * blockAlign);
+  const view = new DataView(buffer);
+  let offset = 0;
+
+  function writeString(value) {
+    for (let index = 0; index < value.length; index += 1) {
+      view.setUint8(offset, value.charCodeAt(index));
+      offset += 1;
+    }
+  }
+
+  writeString("RIFF");
+  view.setUint32(offset, 36 + samples * blockAlign, true);
+  offset += 4;
+  writeString("WAVE");
+  writeString("fmt ");
+  view.setUint32(offset, 16, true);
+  offset += 4;
+  view.setUint16(offset, 1, true);
+  offset += 2;
+  view.setUint16(offset, channelCount, true);
+  offset += 2;
+  view.setUint32(offset, sampleRate, true);
+  offset += 4;
+  view.setUint32(offset, sampleRate * blockAlign, true);
+  offset += 4;
+  view.setUint16(offset, blockAlign, true);
+  offset += 2;
+  view.setUint16(offset, bytesPerSample * 8, true);
+  offset += 2;
+  writeString("data");
+  view.setUint32(offset, samples * blockAlign, true);
+  offset += 4;
+
+  const channels = Array.from({ length: channelCount }, (_, index) => audioBuffer.getChannelData(index));
+  for (let sampleIndex = 0; sampleIndex < samples; sampleIndex += 1) {
+    for (let channelIndex = 0; channelIndex < channelCount; channelIndex += 1) {
+      const sample = clamp(channels[channelIndex][sampleIndex], -1, 1);
+      view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
+      offset += 2;
+    }
+  }
+
+  return new Blob([buffer], { type: "audio/wav" });
+}
+
+function encodePcmWav(floatSamples, sampleRate) {
+  const bytesPerSample = 2;
+  const buffer = new ArrayBuffer(44 + floatSamples.length * bytesPerSample);
+  const view = new DataView(buffer);
+  let offset = 0;
+
+  function writeString(value) {
+    for (let index = 0; index < value.length; index += 1) {
+      view.setUint8(offset, value.charCodeAt(index));
+      offset += 1;
+    }
+  }
+
+  writeString("RIFF");
+  view.setUint32(offset, 36 + floatSamples.length * bytesPerSample, true);
+  offset += 4;
+  writeString("WAVE");
+  writeString("fmt ");
+  view.setUint32(offset, 16, true);
+  offset += 4;
+  view.setUint16(offset, 1, true);
+  offset += 2;
+  view.setUint16(offset, 1, true);
+  offset += 2;
+  view.setUint32(offset, sampleRate, true);
+  offset += 4;
+  view.setUint32(offset, sampleRate * bytesPerSample, true);
+  offset += 4;
+  view.setUint16(offset, bytesPerSample, true);
+  offset += 2;
+  view.setUint16(offset, bytesPerSample * 8, true);
+  offset += 2;
+  writeString("data");
+  view.setUint32(offset, floatSamples.length * bytesPerSample, true);
+  offset += 4;
+
+  floatSamples.forEach(value => {
+    const sample = clamp(value, -1, 1);
+    view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
+    offset += 2;
+  });
+
+  return new Blob([buffer], { type: "audio/wav" });
+}
+
+async function convertRecordingToWav(recordingBlob) {
+  const arrayBuffer = await recordingBlob.arrayBuffer();
+  const AudioContextConstructor = getAudioContextConstructor();
+  const decodeContext = new AudioContextConstructor();
+
+  try {
+    const audioBuffer = await decodeContext.decodeAudioData(arrayBuffer.slice(0));
+    return encodeWav(audioBuffer);
+  } finally {
+    await decodeContext.close();
+  }
+}
+
+function applyPraatAnalysis(result, options = {}) {
+  if (!result?.ok) return;
+
+  const coach = classifyPraatFeedback(result);
+  scoreValue.textContent = coach.score;
+  setScoreVisual(coach.score);
+  updateAudience(coach.score);
+  pitchMetric.textContent = coach.pitch.label;
+  energyMetric.textContent = coach.volume.label;
+  tempoMetric.textContent = coach.tempo.label;
+  pauseMetric.textContent = coach.pauses.label;
+  emphasisMetric.textContent = coach.emphasis.label;
+  clarityMetric.textContent = coach.clarity.label;
+  setQuality(pitchMetric, coach.pitch.score);
+  setQuality(energyMetric, coach.volume.score);
+  setQuality(tempoMetric, coach.tempo.score);
+  setQuality(pauseMetric, coach.pauses.score);
+  setQuality(emphasisMetric, coach.emphasis.score);
+  setQuality(clarityMetric, coach.clarity.score);
+  feedbackText.textContent = coach.feedback;
+  setRecordingNotice(
+    options.live
+      ? "Recording. Praat checked the latest speech section."
+      : "Praat analysis complete. Playback is ready below.",
+    options.live ? "active" : "success"
+  );
+}
+
+async function sendWavToPraat(wavBlob) {
+  const response = await fetch(PRAAT_ANALYZE_URL, {
+    method: "POST",
+    headers: { "Content-Type": "audio/wav" },
+    body: wavBlob
+  });
+  const result = await response.json();
+
+  if (!response.ok || !result.ok) {
+    throw new Error(result.error || "Praat analysis failed");
+  }
+
+  return result;
+}
+
+async function analyzeWithPraat(recordingBlob) {
+  if (!canUseLocalPraat()) {
+    setRecordingNotice("Browser analysis complete. Playback is ready below.", "success");
+    return;
+  }
+
+  try {
+    setRecordingNotice("Recording complete. Running local Praat analysis...", "active");
+    const wavBlob = await convertRecordingToWav(recordingBlob);
+    const result = await sendWavToPraat(wavBlob);
+    applyPraatAnalysis(result);
+  } catch (error) {
+    setRecordingNotice(
+      `Browser analysis shown. Local Praat backend unavailable: ${error.message}`,
+      "warning"
+    );
+  }
+}
+
+function isRecordingActive() {
+  return mediaRecorder && mediaRecorder.state === "recording";
+}
+
+function resetLivePraatBuffers() {
+  livePcmChunks = [];
+  livePcmSampleCount = 0;
+  livePcmTotalSamples = 0;
+  isLivePraatAnalyzing = false;
+}
+
+function trimLivePcmBuffer() {
+  if (!audioContext) return;
+  const maximumSamples = Math.ceil(audioContext.sampleRate * PRAAT_LIVE_WINDOW_SECONDS);
+
+  while (livePcmChunks.length > 1 && livePcmSampleCount - livePcmChunks[0].length > maximumSamples) {
+    livePcmSampleCount -= livePcmChunks.shift().length;
+  }
+}
+
+function appendLivePcm(inputBuffer) {
+  const incoming = inputBuffer.getChannelData(0);
+  const copy = new Float32Array(incoming.length);
+  copy.set(incoming);
+  livePcmChunks.push(copy);
+  livePcmSampleCount += copy.length;
+  livePcmTotalSamples += copy.length;
+  trimLivePcmBuffer();
+}
+
+function getRecentLivePcm() {
+  if (!audioContext) return new Float32Array();
+
+  const neededSamples = Math.min(
+    livePcmSampleCount,
+    Math.ceil(audioContext.sampleRate * PRAAT_LIVE_WINDOW_SECONDS)
+  );
+  const result = new Float32Array(neededSamples);
+  let writeIndex = neededSamples;
+
+  for (let chunkIndex = livePcmChunks.length - 1; chunkIndex >= 0 && writeIndex > 0; chunkIndex -= 1) {
+    const chunk = livePcmChunks[chunkIndex];
+    const amount = Math.min(chunk.length, writeIndex);
+    writeIndex -= amount;
+    result.set(chunk.slice(chunk.length - amount), writeIndex);
+  }
+
+  return result;
+}
+
+async function analyzeLiveWithPraat() {
+  if (!isRecordingActive() || isLivePraatAnalyzing || !audioContext) return;
+
+  const minimumSamples = audioContext.sampleRate * MIN_FEEDBACK_SECONDS;
+  if (livePcmTotalSamples < minimumSamples || livePcmSampleCount < minimumSamples) return;
+
+  isLivePraatAnalyzing = true;
+  try {
+    setRecordingNotice("Recording. Praat is checking the latest speech section...", "active");
+    const recentSamples = getRecentLivePcm();
+    const wavBlob = encodePcmWav(recentSamples, audioContext.sampleRate);
+    const result = await sendWavToPraat(wavBlob);
+
+    if (isRecordingActive()) {
+      applyPraatAnalysis(result, { live: true });
+    }
+  } catch (error) {
+    if (isRecordingActive()) {
+      setRecordingNotice("Recording. Live Praat analysis is not available, so browser feedback is shown.", "warning");
+    }
+  } finally {
+    isLivePraatAnalyzing = false;
+  }
+}
+
+function startLivePraatAnalysis() {
+  if (!canUseLocalPraat()) return;
+
+  resetLivePraatBuffers();
+
+  if (!audioContext || typeof audioContext.createScriptProcessor !== "function") return;
+
+  liveAudioProcessor = audioContext.createScriptProcessor(4096, 1, 1);
+  liveMonitorGain = audioContext.createGain();
+  liveMonitorGain.gain.value = 0;
+  liveAudioProcessor.onaudioprocess = event => appendLivePcm(event.inputBuffer);
+  source.connect(liveAudioProcessor);
+  liveAudioProcessor.connect(liveMonitorGain);
+  liveMonitorGain.connect(audioContext.destination);
+
+  clearInterval(livePraatInterval);
+  livePraatInterval = setInterval(analyzeLiveWithPraat, PRAAT_LIVE_INTERVAL_SECONDS * 1000);
+}
+
+function stopLivePraatAnalysis() {
+  clearInterval(livePraatInterval);
+  livePraatInterval = null;
+
+  if (liveAudioProcessor) {
+    liveAudioProcessor.onaudioprocess = null;
+    try {
+      liveAudioProcessor.disconnect();
+    } catch (error) {
+      // The audio node may already be disconnected when recording stops.
+    }
+  }
+
+  if (liveMonitorGain) {
+    try {
+      liveMonitorGain.disconnect();
+    } catch (error) {
+      // The audio node may already be disconnected when recording stops.
+    }
+  }
+
+  liveAudioProcessor = null;
+  liveMonitorGain = null;
+  resetLivePraatBuffers();
 }
 
 function updateAudience(score) {
@@ -763,7 +1405,7 @@ function analyzeRecording() {
 
   if (duration < MIN_FEEDBACK_SECONDS) {
     scoreValue.textContent = "--";
-    scoreRing.style.background = "conic-gradient(var(--accent) 0deg, #dcece9 0deg)";
+    clearQualityColors();
     attentionLabel.textContent = "Too short to judge";
     attentionMeter.style.width = "42%";
     setKidStates(["ready", "curious", "ready", "curious", "ready"]);
@@ -781,8 +1423,9 @@ function analyzeRecording() {
   const result = analyzeProsody(samples, pitchReadings, duration);
 
   scoreValue.textContent = result.score;
-  scoreRing.style.background = `conic-gradient(var(--accent) ${result.score * 3.6}deg, #dcece9 0deg)`;
+  setScoreVisual(result.score);
   updateAudience(result.score);
+  setQuality(energyMetric, result.energyScore);
   energyMetric.textContent = describeMetric(
     result.energyScore,
     "Low",
@@ -790,6 +1433,7 @@ function analyzeRecording() {
     "Strong contrast",
     `${result.energySd.toFixed(1)} dB SD`
   );
+  setQuality(pitchMetric, result.pitchSamples < 8 ? 38 : result.pitchScore);
   pitchMetric.textContent = result.pitchSamples < 8
     ? "Pitch unclear"
     : describeMetric(
@@ -799,6 +1443,7 @@ function analyzeRecording() {
         "Expressive",
         `${result.pitchRange.toFixed(1)} st range`
       );
+  setQuality(tempoMetric, result.tempoScore);
   tempoMetric.textContent = describeMetric(
     result.tempoScore,
     "Uneven flow",
@@ -806,6 +1451,7 @@ function analyzeRecording() {
     "Steady flow",
     `${Math.round(result.speechRatio * 100)}% speech`
   );
+  setQuality(pauseMetric, result.pauseScore);
   pauseMetric.textContent = describeMetric(
     result.pauseScore,
     "Needs clearer pauses",
@@ -813,6 +1459,7 @@ function analyzeRecording() {
     "Good pause shape",
     `${result.strategicPauses} pauses, ${result.pausesPerMinute.toFixed(1)}/min`
   );
+  setQuality(emphasisMetric, result.emphasisScore);
   emphasisMetric.textContent = describeMetric(
     result.emphasisScore,
     "Few peaks",
@@ -820,6 +1467,7 @@ function analyzeRecording() {
     "Clear emphasis",
     `${result.emphasisPeaks} peaks`
   );
+  setQuality(clarityMetric, result.clarityScore);
   clarityMetric.textContent = describeMetric(
     result.clarityScore,
     "Signal unclear",
@@ -850,11 +1498,13 @@ async function startRecording() {
   }
 
   stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  audioContext = new AudioContext();
+  const AudioContextConstructor = getAudioContextConstructor();
+  audioContext = new AudioContextConstructor();
   analyser = audioContext.createAnalyser();
   analyser.fftSize = 2048;
   source = audioContext.createMediaStreamSource(stream);
   source.connect(analyser);
+  startLivePraatAnalysis();
 
   chunks = [];
   recordedMimeType = "";
@@ -868,6 +1518,7 @@ async function startRecording() {
   playbackAudio.removeAttribute("src");
   playbackAudio.classList.remove("ready");
   playbackAudio.load();
+  clearQualityColors();
   if (hasReadingPassage()) {
     updateReadingProgress(0, "Listening for the words you read...");
   }
@@ -893,16 +1544,17 @@ async function startRecording() {
   recordButton.textContent = "Stop Recording";
   recordButton.classList.add("recording");
   playButton.disabled = true;
-  setRecordingNotice("Recording. The audience will listen for 5 seconds before judging variety.", "active");
+  setRecordingNotice("Recording. The audience and Praat will listen for 5 seconds before judging variety.", "active");
   feedbackText.textContent = currentMode === "own"
-    ? "Speak freely. After 5 seconds, the audience will start reacting to your voice variety."
-    : "The audience is listening first. After 5 seconds, they will start reacting to your voice variety.";
+    ? "Speak freely. After 5 seconds, the audience will react and Praat will check rolling speech sections."
+    : "The audience is listening first. After 5 seconds, they will react and Praat will check rolling speech sections.";
   updateListeningPeriod(0);
 }
 
 function finishRecording() {
   clearInterval(timerInterval);
   cancelAnimationFrame(animationFrame);
+  stopLivePraatAnalysis();
   stopReadingTracker();
   stream.getTracks().forEach(track => track.stop());
   audioContext.close();
@@ -923,6 +1575,7 @@ function finishRecording() {
   recordButton.classList.remove("recording");
   setRecordingNotice("Recording complete. Play it back or try another take.", "success");
   analyzeRecording();
+  analyzeWithPraat(blob);
 }
 
 async function toggleRecording() {
@@ -945,6 +1598,7 @@ async function toggleRecording() {
     recordButton.classList.remove("recording");
     setRecordingNotice(message, "warning");
     feedbackText.textContent = message;
+    stopLivePraatAnalysis();
     stopReadingTracker();
     updateAudience(18);
   }
@@ -971,9 +1625,30 @@ modeInputs.forEach(input => {
     if (input.checked) setMode(input.value);
   });
 });
+fontSizeInputs.forEach(input => {
+  input.addEventListener("change", () => {
+    if (input.checked) setReadingSize(input.value);
+  });
+});
+ownTextInput.addEventListener("input", () => {
+  if (currentMode === "own") renderOwnText();
+});
+scrollModeInputs.forEach(input => {
+  input.addEventListener("change", () => {
+    if (input.checked) setScrollMode(input.value);
+  });
+});
+audienceTypeInputs.forEach(input => {
+  input.addEventListener("change", () => {
+    if (input.checked) setAudienceType(input.value);
+  });
+});
 recordButton.addEventListener("click", toggleRecording);
 playButton.addEventListener("click", playRecording);
 
+setReadingSize("large");
+setScrollMode("voice");
+setAudienceType("duo");
 setMode("story");
 drawIdleWave();
 

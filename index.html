@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Voice Variety Coach</title>
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=github-simplified" />
   </head>
   <body>
     <main class="app-shell">
@@ -25,18 +25,44 @@
           <label for="modeBusiness">Business</label>
           <input id="modeOwn" name="practiceMode" type="radio" value="own" />
           <label for="modeOwn">Own text</label>
+          <input id="modeAudience" name="practiceMode" type="radio" value="audience" />
+          <label for="modeAudience">Just audience</label>
         </fieldset>
 
         <div class="prompt-card">
           <div class="prompt-header">
             <span id="passageTitle">Read this aloud</span>
-            <button class="icon-button" id="newPromptButton" type="button" aria-label="New prompt" title="New prompt">
-              ↻
-            </button>
+            <div class="prompt-tools">
+              <fieldset class="scroll-mode-switch" aria-label="Text movement">
+                <legend>Text movement</legend>
+                <input id="scrollVoice" name="scrollMode" type="radio" value="voice" checked />
+                <label for="scrollVoice">Voice</label>
+                <input id="scrollAuto" name="scrollMode" type="radio" value="auto" />
+                <label for="scrollAuto">Auto</label>
+                <input id="scrollManual" name="scrollMode" type="radio" value="manual" />
+                <label for="scrollManual">Manual</label>
+              </fieldset>
+              <fieldset class="font-size-switch" aria-label="Text size">
+                <legend>Text size</legend>
+                <input id="textSmall" name="readingSize" type="radio" value="small" />
+                <label for="textSmall">Small</label>
+                <input id="textMedium" name="readingSize" type="radio" value="medium" />
+                <label for="textMedium">Medium</label>
+                <input id="textLarge" name="readingSize" type="radio" value="large" checked />
+                <label for="textLarge">Large</label>
+              </fieldset>
+              <button class="icon-button" id="newPromptButton" type="button" aria-label="New prompt" title="New prompt">
+                ↻
+              </button>
+            </div>
           </div>
           <div class="reading-progress" aria-hidden="true">
             <div id="readingProgress"></div>
           </div>
+          <label class="own-text-editor" for="ownTextInput">
+            <span>Paste your text</span>
+            <textarea id="ownTextInput" rows="6" placeholder="Paste or type the text you want to read aloud here."></textarea>
+          </label>
           <div class="reading-text" id="readingText" tabindex="0" aria-label="Reading text"></div>
           <p class="reading-status" id="readingStatus" aria-live="polite">Ready to follow your reading.</p>
         </div>
@@ -54,6 +80,16 @@
               </div>
             </div>
           </div>
+
+          <fieldset class="audience-choice" aria-label="Audience type">
+            <legend>Audience type</legend>
+            <input id="audienceKids" name="audienceType" type="radio" value="kids" />
+            <label for="audienceKids">Kids</label>
+            <input id="audienceBusiness" name="audienceType" type="radio" value="business" />
+            <label for="audienceBusiness">Business</label>
+            <input id="audienceDuo" name="audienceType" type="radio" value="duo" checked />
+            <label for="audienceDuo">Antonie &amp; Steffen</label>
+          </fieldset>
 
           <div class="audience-row" id="audienceRow">
             <article class="kid kid-a ready" data-kid aria-label="Maya">
@@ -190,6 +226,6 @@
       </aside>
     </main>
 
-    <script src="app.js"></script>
+    <script src="app.js?v=github-simplified"></script>
   </body>
 </html>
