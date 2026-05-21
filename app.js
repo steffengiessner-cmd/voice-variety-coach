@@ -100,11 +100,12 @@ const attentionMeter = document.querySelector("#attentionMeter");
 const attentionLabel = document.querySelector("#attentionLabel");
 const kids = Array.from(document.querySelectorAll("[data-kid]"));
 const MIN_FEEDBACK_SECONDS = 5;
-const LIVE_SAMPLE_WINDOW = 1200;
-const LIVE_PITCH_WINDOW = 360;
 const PRAAT_ANALYZE_URL = "http://127.0.0.1:8000/analyze";
 const PRAAT_LIVE_INTERVAL_SECONDS = 5;
 const PRAAT_LIVE_WINDOW_SECONDS = 8;
+const AUDIENCE_UPDATE_SECONDS = 1;
+const AUDIENCE_MEMORY_WEIGHT = 0.75;
+const AUDIENCE_START_ATTENTION = 52;
 
 const canvasContext = waveform.getContext("2d");
 let mediaRecorder;
@@ -139,6 +140,11 @@ let livePcmSampleCount = 0;
 let livePcmTotalSamples = 0;
 let livePraatInterval;
 let isLivePraatAnalyzing = false;
+let audienceAttention = AUDIENCE_START_ATTENTION;
+let audienceAttentionHistory = [];
+let audienceMomentScores = [];
+let audienceAnalysisHistory = [];
+let lastAudienceUpdateAt = 0;
 
 function setPrompt() {
   if (currentMode === "own") {
@@ -943,6 +949,7 @@ function setKidStates(states) {
 }
 
 function resetAudience() {
+  resetAudienceTracking();
   attentionLabel.textContent = "Ready to listen";
   attentionMeter.style.width = "34%";
   setKidStates(["ready", "ready", "ready", "ready", "ready"]);
@@ -1124,14 +1131,23 @@ function applyPraatAnalysis(result, options = {}) {
   if (!result?.ok) return;
 
   if (!hasEnoughPraatSpeech(result)) {
-    if (!options.live) showNoSpeechDetected();
+    if (!options.live && !options.finalTechnical) showNoSpeechDetected();
     return;
   }
 
   const coach = classifyPraatFeedback(result);
-  scoreValue.textContent = coach.score;
-  setScoreVisual(coach.score);
-  updateAudience(coach.score);
+
+  if (options.finalTechnical) {
+    setRecordingNotice("Praat technical check complete. Overall score uses average audience attention across the take.", "success");
+    return;
+  }
+
+  const displayScore = options.live && audienceAttentionHistory.length
+    ? Math.round(audienceAttention)
+    : coach.score;
+  scoreValue.textContent = displayScore;
+  setScoreVisual(displayScore);
+  if (!options.live) updateAudience(coach.score);
   pitchMetric.textContent = coach.pitch.label;
   energyMetric.textContent = coach.volume.label;
   tempoMetric.textContent = coach.tempo.label;
@@ -1179,7 +1195,7 @@ async function analyzeWithPraat(recordingBlob) {
     setRecordingNotice("Recording complete. Running local Praat analysis...", "active");
     const wavBlob = await convertRecordingToWav(recordingBlob);
     const result = await sendWavToPraat(wavBlob);
-    applyPraatAnalysis(result);
+    applyPraatAnalysis(result, { finalTechnical: true });
   } catch (error) {
     setRecordingNotice(
       `Browser analysis shown. Local Praat backend unavailable: ${error.message}`,
@@ -1327,6 +1343,94 @@ function updateAudience(score) {
   }
 }
 
+function resetAudienceTracking() {
+  audienceAttention = AUDIENCE_START_ATTENTION;
+  audienceAttentionHistory = [];
+  audienceMomentScores = [];
+  audienceAnalysisHistory = [];
+  lastAudienceUpdateAt = 0;
+}
+
+function getRecentProsodyResult(windowSeconds = PRAAT_LIVE_WINDOW_SECONDS, elapsedSeconds = getElapsedSeconds()) {
+  const elapsed = Math.max(1, elapsedSeconds);
+  const windowDuration = Math.min(windowSeconds, elapsed);
+  const rmsFramesPerSecond = samples.length / elapsed;
+  const pitchFramesPerSecond = pitchReadings.length / elapsed;
+  const recentRmsCount = Math.max(1, Math.round(rmsFramesPerSecond * windowDuration));
+  const recentPitchCount = Math.max(1, Math.round(pitchFramesPerSecond * windowDuration));
+
+  return analyzeProsody(
+    samples.slice(-recentRmsCount),
+    pitchReadings.slice(-recentPitchCount),
+    windowDuration
+  );
+}
+
+function updateAudienceOverTime(result) {
+  const momentScore = clamp(result.score, 0, 100);
+  audienceAttention = clamp(
+    audienceAttention * AUDIENCE_MEMORY_WEIGHT + momentScore * (1 - AUDIENCE_MEMORY_WEIGHT),
+    0,
+    100
+  );
+  audienceAttentionHistory.push(audienceAttention);
+  audienceMomentScores.push(momentScore);
+  audienceAnalysisHistory.push(result);
+  updateAudience(audienceAttention);
+}
+
+function averageResultValue(results, property, fallback) {
+  const values = results
+    .map(result => result[property])
+    .filter(value => Number.isFinite(value));
+
+  return values.length ? mean(values) : fallback[property];
+}
+
+function sumResultValue(results, property, fallback) {
+  const values = results
+    .map(result => result[property])
+    .filter(value => Number.isFinite(value));
+
+  return values.length
+    ? values.reduce((total, value) => total + value, 0)
+    : fallback[property];
+}
+
+function buildFinalAudienceResult(fallbackResult) {
+  const usableResults = audienceAnalysisHistory.filter(hasEnoughSpeech);
+  if (!usableResults.length || !audienceAttentionHistory.length) return fallbackResult;
+
+  const finalScore = Math.round(mean(audienceAttentionHistory));
+
+  return {
+    ...fallbackResult,
+    score: finalScore,
+    pitchScore: averageResultValue(usableResults, "pitchScore", fallbackResult),
+    energyScore: averageResultValue(usableResults, "energyScore", fallbackResult),
+    pacingScore: averageResultValue(usableResults, "pacingScore", fallbackResult),
+    pitchSd: averageResultValue(usableResults, "pitchSd", fallbackResult),
+    pitchRange: averageResultValue(usableResults, "pitchRange", fallbackResult),
+    energySd: averageResultValue(usableResults, "energySd", fallbackResult),
+    energyRange: averageResultValue(usableResults, "energyRange", fallbackResult),
+    speechRatio: averageResultValue(usableResults, "speechRatio", fallbackResult),
+    pitchSamples: Math.round(sumResultValue(usableResults, "pitchSamples", fallbackResult)),
+    tempoScore: averageResultValue(usableResults, "tempoScore", fallbackResult),
+    pauseScore: averageResultValue(usableResults, "pauseScore", fallbackResult),
+    emphasisScore: averageResultValue(usableResults, "emphasisScore", fallbackResult),
+    clarityScore: averageResultValue(usableResults, "clarityScore", fallbackResult),
+    averageSpeechRun: averageResultValue(usableResults, "averageSpeechRun", fallbackResult),
+    emphasisPeaks: Math.round(sumResultValue(usableResults, "emphasisPeaks", fallbackResult)),
+    emphasisPeaksPerMinute: averageResultValue(usableResults, "emphasisPeaksPerMinute", fallbackResult),
+    pitchTrackingRatio: averageResultValue(usableResults, "pitchTrackingRatio", fallbackResult),
+    strategicPauses: Math.round(sumResultValue(usableResults, "strategicPauses", fallbackResult)),
+    pausesPerMinute: averageResultValue(usableResults, "pausesPerMinute", fallbackResult),
+    audienceMoments: usableResults.length,
+    rawBestMoment: Math.round(Math.max(...audienceMomentScores)),
+    rawAverageMoment: Math.round(mean(audienceMomentScores))
+  };
+}
+
 function analyzeProsody(rmsValues, pitches, duration) {
   const speechThreshold = getSpeechThreshold(rmsValues);
   const frameDuration = duration / Math.max(1, rmsValues.length);
@@ -1455,10 +1559,8 @@ function analyzeProsody(rmsValues, pitches, duration) {
 }
 
 function scoreLiveAudience() {
-  const recentEnergy = samples.slice(-LIVE_SAMPLE_WINDOW);
-  const recentPitch = pitchReadings.slice(-LIVE_PITCH_WINDOW);
-  const result = analyzeProsody(recentEnergy, recentPitch, MIN_FEEDBACK_SECONDS);
-  return hasEnoughSpeech(result) ? result.score : null;
+  const result = getRecentProsodyResult();
+  return hasEnoughSpeech(result) ? result : null;
 }
 
 function estimatePitch(buffer, sampleRate, rms) {
@@ -1513,14 +1615,15 @@ function drawLiveWave() {
     const elapsedSeconds = getElapsedSeconds();
     if (elapsedSeconds < MIN_FEEDBACK_SECONDS) {
       updateListeningPeriod(elapsedSeconds);
-    } else {
-      const liveScore = scoreLiveAudience();
-      if (liveScore == null) {
+    } else if (elapsedSeconds - lastAudienceUpdateAt >= AUDIENCE_UPDATE_SECONDS) {
+      lastAudienceUpdateAt = elapsedSeconds;
+      const liveResult = scoreLiveAudience();
+      if (liveResult == null) {
         attentionLabel.textContent = "Waiting for speech";
         attentionMeter.style.width = "36%";
         setKidStates(["ready", "curious", "ready", "curious", "ready"]);
       } else {
-        updateAudience(liveScore);
+        updateAudienceOverTime(liveResult);
       }
     }
   }
@@ -1574,12 +1677,19 @@ function analyzeRecording() {
     return;
   }
 
-  const result = analyzeProsody(samples, pitchReadings, duration);
+  const wholeResult = analyzeProsody(samples, pitchReadings, duration);
 
-  if (!hasEnoughSpeech(result)) {
+  if (!hasEnoughSpeech(wholeResult)) {
     showNoSpeechDetected();
     return;
   }
+
+  if (!audienceAnalysisHistory.length) {
+    const recentResult = getRecentProsodyResult(PRAAT_LIVE_WINDOW_SECONDS, duration);
+    if (hasEnoughSpeech(recentResult)) updateAudienceOverTime(recentResult);
+  }
+
+  const result = buildFinalAudienceResult(wholeResult);
 
   scoreValue.textContent = result.score;
   setScoreVisual(result.score);
@@ -1608,7 +1718,9 @@ function analyzeRecording() {
     "Uneven flow",
     "Moderate flow",
     "Steady flow",
-    `${Math.round(result.speechRatio * 100)}% speech`
+    result.audienceMoments
+      ? `${Math.round(result.speechRatio * 100)}% speech average`
+      : `${Math.round(result.speechRatio * 100)}% speech`
   );
   setQuality(pauseMetric, result.pauseScore);
   pauseMetric.textContent = describeMetric(
@@ -1616,7 +1728,9 @@ function analyzeRecording() {
     "Needs clearer pauses",
     "Some pause shape",
     "Good pause shape",
-    `${result.strategicPauses} pauses, ${result.pausesPerMinute.toFixed(1)}/min`
+    result.audienceMoments
+      ? `${result.pausesPerMinute.toFixed(1)}/min average`
+      : `${result.strategicPauses} pauses, ${result.pausesPerMinute.toFixed(1)}/min`
   );
   setQuality(emphasisMetric, result.emphasisScore);
   emphasisMetric.textContent = describeMetric(
@@ -1624,7 +1738,9 @@ function analyzeRecording() {
     "Few peaks",
     "Some emphasis",
     "Clear emphasis",
-    `${result.emphasisPeaks} peaks`
+    result.audienceMoments
+      ? `${result.emphasisPeaksPerMinute.toFixed(1)}/min average`
+      : `${result.emphasisPeaks} peaks`
   );
   setQuality(clarityMetric, result.clarityScore);
   clarityMetric.textContent = describeMetric(
@@ -1637,17 +1753,17 @@ function analyzeRecording() {
   updateVocalColour(vocalColourFromBrowserResult(result));
 
   if (result.score >= 78) {
-    feedbackText.textContent = "The audience stayed with you. Keep the shape, and now practice making the most important sentence even more deliberate.";
+    feedbackText.textContent = "On average, the audience stayed with you. Keep the shape, and now practice making the most important sentence even more deliberate.";
   } else if (result.pitchScore < 45 && result.energyScore < 45) {
-    feedbackText.textContent = "This sounded fairly monotone: both pitch and volume stayed narrow. Try choosing three key words and lifting either the pitch or volume on each one.";
+    feedbackText.textContent = "Across the take, this sounded fairly monotone: both pitch and volume stayed narrow. Try choosing three key words and lifting either the pitch or volume on each one.";
   } else if (result.pitchScore < 45) {
-    feedbackText.textContent = "The pitch stayed in a narrow band. Try adding a clearer rise, fall, or peak on the most important phrase.";
+    feedbackText.textContent = "Across the take, the pitch stayed in a narrow band. Try adding a clearer rise, fall, or peak on the most important phrase.";
   } else if (result.energyScore < 45) {
-    feedbackText.textContent = "The volume stayed too even. Try making important words stronger and less important words lighter.";
+    feedbackText.textContent = "Across the take, the volume stayed too even. Try making important words stronger and less important words lighter.";
   } else if (result.pacingScore < 45) {
-    feedbackText.textContent = "The pacing needs more shape. Add one clean pause before an important idea and another after it lands.";
+    feedbackText.textContent = "Across the take, the pacing needs more shape. Add one clean pause before an important idea and another after it lands.";
   } else {
-    feedbackText.textContent = "There is some variety, but not enough contrast yet. Try a second take with a larger pitch change and one deliberate pause.";
+    feedbackText.textContent = "There is some variety, but the average audience reaction still has room to grow. Try a second take with steady contrast throughout, not only at the end.";
   }
 }
 
@@ -1673,6 +1789,7 @@ async function startRecording() {
   speakingFrames = 0;
   quietFrames = 0;
   liveFrame = 0;
+  resetAudienceTracking();
   if (audioUrl) URL.revokeObjectURL(audioUrl);
   audioUrl = "";
   playbackAudio.removeAttribute("src");
@@ -1705,10 +1822,10 @@ async function startRecording() {
   recordButton.textContent = "Stop Recording";
   recordButton.classList.add("recording");
   playButton.disabled = true;
-  setRecordingNotice("Recording. The audience and Praat will listen for 5 seconds before judging variety.", "active");
+  setRecordingNotice("Recording. The audience will listen first, then average its attention over time.", "active");
   feedbackText.textContent = currentMode === "own"
-    ? "Speak freely. After 5 seconds, the audience will react and Praat will check rolling speech sections."
-    : "The audience is listening first. After 5 seconds, they will react and Praat will check rolling speech sections.";
+    ? "Speak freely. After 5 seconds, the audience will react gradually and the final score will reflect the whole take."
+    : "The audience is listening first. After 5 seconds, they will react gradually and the final score will reflect the whole take.";
   updateListeningPeriod(0);
 }
 
