@@ -89,6 +89,10 @@ const tempoMetric = document.querySelector("#tempoMetric");
 const pauseMetric = document.querySelector("#pauseMetric");
 const emphasisMetric = document.querySelector("#emphasisMetric");
 const clarityMetric = document.querySelector("#clarityMetric");
+const determinationMetric = document.querySelector("#determinationMetric");
+const compassionMetric = document.querySelector("#compassionMetric");
+const enthusiasmMetric = document.querySelector("#enthusiasmMetric");
+const vocalColourText = document.querySelector("#vocalColourText");
 const feedbackText = document.querySelector("#feedbackText");
 const feedbackBox = document.querySelector(".feedback-box");
 const scoreRing = document.querySelector(".score-ring");
@@ -619,10 +623,145 @@ function setScoreVisual(score) {
 }
 
 function clearQualityColors() {
-  [pitchMetric, energyMetric, tempoMetric, pauseMetric, emphasisMetric, clarityMetric, feedbackBox].forEach(element => {
+  [
+    pitchMetric,
+    energyMetric,
+    tempoMetric,
+    pauseMetric,
+    emphasisMetric,
+    clarityMetric,
+    determinationMetric,
+    compassionMetric,
+    enthusiasmMetric,
+    feedbackBox
+  ].forEach(element => {
     setQuality(element, null);
   });
   scoreRing.style.background = "conic-gradient(var(--accent) 0deg, #dcece9 0deg)";
+}
+
+function describeColourScore(score) {
+  if (score < 35) return `Low: ${Math.round(score)}%`;
+  if (score < 65) return `Some: ${Math.round(score)}%`;
+  return `Strong: ${Math.round(score)}%`;
+}
+
+function updateVocalColour(colour) {
+  determinationMetric.textContent = describeColourScore(colour.determination);
+  compassionMetric.textContent = describeColourScore(colour.compassion);
+  enthusiasmMetric.textContent = describeColourScore(colour.enthusiasm);
+  setQuality(determinationMetric, colour.determination);
+  setQuality(compassionMetric, colour.compassion);
+  setQuality(enthusiasmMetric, colour.enthusiasm);
+  vocalColourText.textContent = colour.feedback;
+}
+
+function resetVocalColour(message = "This first version is a rule-based estimate. A trained model can be added later.") {
+  determinationMetric.textContent = "Not trained";
+  compassionMetric.textContent = "Not trained";
+  enthusiasmMetric.textContent = "Not trained";
+  vocalColourText.textContent = message;
+  [determinationMetric, compassionMetric, enthusiasmMetric].forEach(element => setQuality(element, null));
+}
+
+function hasEnoughSpeech(result) {
+  return result.speechRatio >= 0.12 && (result.pitchSamples >= 6 || result.energyRange >= 3);
+}
+
+function hasEnoughPraatSpeech(result) {
+  const speechRatio = result.tempo?.speechRatio ?? 0;
+  const pitchFrames = result.pitch?.trackedFrames ?? 0;
+  const volumeRange = result.volume?.rangeDbP05P95 ?? 0;
+
+  return speechRatio >= 0.12 && (pitchFrames >= 6 || volumeRange >= 3);
+}
+
+function showNoSpeechDetected() {
+  scoreValue.textContent = "--";
+  clearQualityColors();
+  attentionLabel.textContent = "No speech detected";
+  attentionMeter.style.width = "32%";
+  setKidStates(["ready", "curious", "ready", "curious", "ready"]);
+  energyMetric.textContent = "No speech detected";
+  pitchMetric.textContent = "No speech detected";
+  tempoMetric.textContent = "No speech detected";
+  pauseMetric.textContent = "No speech detected";
+  emphasisMetric.textContent = "No speech detected";
+  clarityMetric.textContent = "No speech detected";
+  resetVocalColour("No Vocal Colour score yet. I need enough audible speech first.");
+  setRecordingNotice("I did not hear enough speech to score this take.", "warning");
+  feedbackText.textContent = "This take did not contain enough audible speech. Try again with the microphone close enough and speak for at least 5 seconds.";
+}
+
+function buildVocalColourFromScores(scores) {
+  const determination = clamp(
+    scores.energy * 0.28 +
+      scores.emphasis * 0.3 +
+      scores.clarity * 0.18 +
+      scores.tempo * 0.14 +
+      scores.pause * 0.1,
+    0,
+    100
+  );
+  const compassion = clamp(
+    scores.pause * 0.34 +
+      (100 - Math.abs(scores.energy - 52)) * 0.24 +
+      scores.clarity * 0.18 +
+      (100 - Math.abs(scores.tempo - 58)) * 0.14 +
+      (100 - Math.abs(scores.pitch - 48)) * 0.1,
+    0,
+    100
+  );
+  const enthusiasm = clamp(
+    scores.pitch * 0.32 +
+      scores.energy * 0.28 +
+      scores.emphasis * 0.24 +
+      scores.tempo * 0.1 +
+      scores.clarity * 0.06,
+    0,
+    100
+  );
+  const colours = [
+    ["determination", determination],
+    ["compassion", compassion],
+    ["enthusiasm", enthusiasm]
+  ];
+  const [dominantName, dominantScore] = [...colours].sort((a, b) => b[1] - a[1])[0];
+  const label = dominantScore < 42 ? "not strongly coloured yet" : `mostly ${dominantName}`;
+  const advice = dominantName === "determination"
+    ? "To add compassion, slow slightly and soften one important phrase."
+    : dominantName === "compassion"
+      ? "To add determination, make one key word firmer and more deliberate."
+      : "To add determination, land the final sentence with a steadier pace.";
+
+  return {
+    determination,
+    compassion,
+    enthusiasm,
+    feedback: `Prototype only, not trained yet. Your vocal colour sounds ${label}. ${advice}`
+  };
+}
+
+function vocalColourFromBrowserResult(result) {
+  return buildVocalColourFromScores({
+    pitch: result.pitchSamples < 8 ? 38 : result.pitchScore,
+    energy: result.energyScore,
+    tempo: result.tempoScore,
+    pause: result.pauseScore,
+    emphasis: result.emphasisScore,
+    clarity: result.clarityScore
+  });
+}
+
+function vocalColourFromPraatCoach(coach) {
+  return buildVocalColourFromScores({
+    pitch: coach.pitch.score,
+    energy: coach.volume.score,
+    tempo: coach.tempo.score,
+    pause: coach.pauses.score,
+    emphasis: coach.emphasis.score,
+    clarity: coach.clarity.score
+  });
 }
 
 function semitoneRangeFromHz(meanHz, rangeHz) {
@@ -984,6 +1123,11 @@ async function convertRecordingToWav(recordingBlob) {
 function applyPraatAnalysis(result, options = {}) {
   if (!result?.ok) return;
 
+  if (!hasEnoughPraatSpeech(result)) {
+    if (!options.live) showNoSpeechDetected();
+    return;
+  }
+
   const coach = classifyPraatFeedback(result);
   scoreValue.textContent = coach.score;
   setScoreVisual(coach.score);
@@ -1000,6 +1144,7 @@ function applyPraatAnalysis(result, options = {}) {
   setQuality(pauseMetric, coach.pauses.score);
   setQuality(emphasisMetric, coach.emphasis.score);
   setQuality(clarityMetric, coach.clarity.score);
+  updateVocalColour(vocalColourFromPraatCoach(coach));
   feedbackText.textContent = coach.feedback;
   setRecordingNotice(
     options.live
@@ -1312,7 +1457,8 @@ function analyzeProsody(rmsValues, pitches, duration) {
 function scoreLiveAudience() {
   const recentEnergy = samples.slice(-LIVE_SAMPLE_WINDOW);
   const recentPitch = pitchReadings.slice(-LIVE_PITCH_WINDOW);
-  return analyzeProsody(recentEnergy, recentPitch, MIN_FEEDBACK_SECONDS).score;
+  const result = analyzeProsody(recentEnergy, recentPitch, MIN_FEEDBACK_SECONDS);
+  return hasEnoughSpeech(result) ? result.score : null;
 }
 
 function estimatePitch(buffer, sampleRate, rms) {
@@ -1368,7 +1514,14 @@ function drawLiveWave() {
     if (elapsedSeconds < MIN_FEEDBACK_SECONDS) {
       updateListeningPeriod(elapsedSeconds);
     } else {
-      updateAudience(scoreLiveAudience());
+      const liveScore = scoreLiveAudience();
+      if (liveScore == null) {
+        attentionLabel.textContent = "Waiting for speech";
+        attentionMeter.style.width = "36%";
+        setKidStates(["ready", "curious", "ready", "curious", "ready"]);
+      } else {
+        updateAudience(liveScore);
+      }
     }
   }
 
@@ -1415,12 +1568,18 @@ function analyzeRecording() {
     pauseMetric.textContent = "Need 5 seconds";
     emphasisMetric.textContent = "Need 5 seconds";
     clarityMetric.textContent = "Need 5 seconds";
+    resetVocalColour("Vocal Colour also needs at least 5 seconds of speech.");
     setRecordingNotice("That take was under 5 seconds, so I did not score voice variety yet.", "warning");
     feedbackText.textContent = "This take was too short to judge voice variety fairly. Try speaking for at least 5 seconds so the audience can hear a real pattern.";
     return;
   }
 
   const result = analyzeProsody(samples, pitchReadings, duration);
+
+  if (!hasEnoughSpeech(result)) {
+    showNoSpeechDetected();
+    return;
+  }
 
   scoreValue.textContent = result.score;
   setScoreVisual(result.score);
@@ -1475,6 +1634,7 @@ function analyzeRecording() {
     "Clear signal",
     `${Math.round(result.pitchTrackingRatio * 100)}% voice trace`
   );
+  updateVocalColour(vocalColourFromBrowserResult(result));
 
   if (result.score >= 78) {
     feedbackText.textContent = "The audience stayed with you. Keep the shape, and now practice making the most important sentence even more deliberate.";
@@ -1519,6 +1679,7 @@ async function startRecording() {
   playbackAudio.classList.remove("ready");
   playbackAudio.load();
   clearQualityColors();
+  resetVocalColour("Listening first. Vocal Colour will update after a few seconds.");
   if (hasReadingPassage()) {
     updateReadingProgress(0, "Listening for the words you read...");
   }

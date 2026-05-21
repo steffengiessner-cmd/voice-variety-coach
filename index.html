@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Voice Variety Coach</title>
-    <link rel="stylesheet" href="styles.css?v=menus-recording" />
+    <link rel="stylesheet" href="styles.css?v=no-silence-score" />
   </head>
   <body>
     <main class="app-shell">
@@ -219,6 +219,28 @@
           </article>
         </div>
 
+        <section class="vocal-colour-panel" aria-labelledby="vocal-colour-title">
+          <div class="vocal-colour-header">
+            <h3 id="vocal-colour-title">Vocal Colour</h3>
+            <span>Prototype</span>
+          </div>
+          <div class="vocal-colour-grid">
+            <article>
+              <span>Determination</span>
+              <strong id="determinationMetric">Not trained</strong>
+            </article>
+            <article>
+              <span>Compassion</span>
+              <strong id="compassionMetric">Not trained</strong>
+            </article>
+            <article>
+              <span>Enthusiasm</span>
+              <strong id="enthusiasmMetric">Not trained</strong>
+            </article>
+          </div>
+          <p id="vocalColourText">This first version is a rule-based estimate. A trained model can be added later.</p>
+        </section>
+
         <div class="feedback-box">
           <h3>Next practice focus</h3>
           <p id="feedbackText">Record a short take and I will listen for variety in energy, pitch, and pace.</p>
@@ -226,6 +248,6 @@
       </aside>
     </main>
 
-    <script src="app.js?v=menus-recording"></script>
+    <script src="app.js?v=no-silence-score"></script>
   </body>
 </html>
