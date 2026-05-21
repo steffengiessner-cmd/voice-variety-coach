@@ -432,7 +432,7 @@ body.reading-size-large .reading-text {
 
 .audience-choice {
   display: none;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 4px;
   margin: 0 0 8px;
   padding: 4px;
@@ -538,6 +538,10 @@ body.audience-only-mode .audience-choice {
   align-content: end;
   transform-origin: bottom center;
   transition: transform 240ms ease, opacity 240ms ease, filter 240ms ease;
+}
+
+.kid:nth-child(n + 6) {
+  display: none;
 }
 
 .kid-b {
@@ -1074,6 +1078,687 @@ body.business-mode {
   content: "Steffen";
 }
 
+.superhero-audience-mode .audience-row {
+  background:
+    radial-gradient(circle at 12% 18%, rgba(245, 213, 99, 0.68) 0 28px, transparent 29px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0) 44%),
+    linear-gradient(180deg, #dfe8f1 0 58%, #7d8794 58% 100%);
+}
+
+.superhero-audience-mode .audience-row::before {
+  left: 18px;
+  right: 18px;
+  top: 18px;
+  height: 82px;
+  border-color: #aeb8c2;
+  background:
+    linear-gradient(#56616d 0 0) 8px 36px / 30px 38px no-repeat,
+    linear-gradient(#6d7883 0 0) 48px 24px / 38px 50px no-repeat,
+    linear-gradient(#48535f 0 0) 98px 44px / 54px 30px no-repeat,
+    linear-gradient(#65717d 0 0) 168px 30px / 44px 44px no-repeat,
+    linear-gradient(#4e5a65 0 0) calc(100% - 118px) 34px / 46px 40px no-repeat,
+    linear-gradient(#6c7680 0 0) calc(100% - 58px) 20px / 36px 54px no-repeat,
+    #cad6df;
+}
+
+.superhero-audience-mode .kid {
+  min-height: 212px;
+}
+
+.superhero-audience-mode .kid-hair,
+.superhero-audience-mode .kid-eye {
+  display: none;
+}
+
+.superhero-audience-mode .kid-head {
+  width: 66px;
+  height: 70px;
+  border-radius: 46% 46% 48% 48%;
+  box-shadow:
+    inset -8px -10px rgba(15, 20, 28, 0.2),
+    0 4px 0 rgba(23, 33, 43, 0.07);
+}
+
+.superhero-audience-mode .kid-head::before,
+.superhero-audience-mode .kid-head::after,
+.superhero-audience-mode .kid-body::before,
+.superhero-audience-mode .kid-body::after {
+  content: none;
+}
+
+.superhero-audience-mode .kid-body {
+  width: 72px;
+  height: 78px;
+  border-radius: 22px 22px 10px 10px;
+  box-shadow: inset -7px -10px rgba(8, 12, 20, 0.16);
+}
+
+.superhero-audience-mode .kid-mouth {
+  border-color: rgba(70, 33, 36, 0.78);
+}
+
+.superhero-audience-mode .desk {
+  height: 40px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.24), transparent 42%),
+    #313946;
+  box-shadow: inset 0 7px rgba(255, 255, 255, 0.16);
+}
+
+.superhero-audience-mode .desk-item {
+  display: none;
+}
+
+.superhero-audience-mode .desk::after {
+  position: absolute;
+  left: 50%;
+  top: 10px;
+  max-width: calc(100% - 12px);
+  padding: 2px 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  color: #202832;
+  font-size: 0.66rem;
+  font-weight: 900;
+  line-height: 1.15;
+  text-align: center;
+  text-overflow: ellipsis;
+  transform: translateX(-50%);
+}
+
+.superhero-audience-mode .kid-a .kid-head {
+  background:
+    linear-gradient(90deg, transparent 0 48%, rgba(80, 5, 15, 0.5) 49% 51%, transparent 52%),
+    repeating-linear-gradient(35deg, rgba(60, 8, 16, 0.38) 0 1px, transparent 1px 10px),
+    #c92535;
+}
+
+.superhero-audience-mode .kid-a .kid-head::before {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  left: 13px;
+  top: 28px;
+  width: 15px;
+  height: 11px;
+  border: 2px solid #16212b;
+  border-radius: 80% 36% 72% 42%;
+  background: #f6fbff;
+  box-shadow: 27px 0 0 -2px #f6fbff, 27px 0 0 0 #16212b;
+  transform: rotate(-16deg);
+}
+
+.superhero-audience-mode .kid-a .kid-head::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  top: 8px;
+  width: 2px;
+  height: 54px;
+  background: rgba(45, 5, 13, 0.38);
+  box-shadow:
+    -16px 10px rgba(45, 5, 13, 0.28),
+    16px 10px rgba(45, 5, 13, 0.28);
+  transform: translateX(-50%);
+}
+
+.superhero-audience-mode .kid-a .kid-mouth {
+  display: none;
+}
+
+.superhero-audience-mode .kid-a .kid-body {
+  background:
+    repeating-linear-gradient(35deg, rgba(60, 8, 16, 0.28) 0 1px, transparent 1px 12px),
+    linear-gradient(90deg, #1e5fae 0 28%, #c92535 29% 71%, #1e5fae 72% 100%);
+}
+
+.superhero-audience-mode .kid-a .desk::after {
+  content: "Spider-Man";
+}
+
+.superhero-audience-mode .kid-b {
+  --skin: #62a85a;
+  --hair: #1e2520;
+}
+
+.superhero-audience-mode .kid-b .kid-head {
+  background: #62a85a;
+  border-radius: 48% 48% 50% 50%;
+}
+
+.superhero-audience-mode .kid-b .kid-hair {
+  display: block;
+  left: 5px;
+  right: 5px;
+  top: -8px;
+  height: 24px;
+  border-radius: 20px 20px 6px 6px;
+  background:
+    radial-gradient(circle at 18% 12px, #1e2520 0 8px, transparent 9px),
+    radial-gradient(circle at 42% 8px, #1e2520 0 10px, transparent 11px),
+    radial-gradient(circle at 68% 13px, #1e2520 0 8px, transparent 9px);
+}
+
+.superhero-audience-mode .kid-b .kid-head::before {
+  content: "";
+  position: absolute;
+  left: 17px;
+  top: 34px;
+  width: 7px;
+  height: 8px;
+  border-radius: 50%;
+  background: #102015;
+  box-shadow: 25px 0 #102015;
+}
+
+.superhero-audience-mode .kid-b .kid-body {
+  background:
+    linear-gradient(180deg, #62a85a 0 52%, #6c4f9d 53% 100%);
+}
+
+.superhero-audience-mode .kid-b .kid-arm {
+  background: #62a85a;
+}
+
+.superhero-audience-mode .kid-b .desk::after {
+  content: "Hulk";
+}
+
+.superhero-audience-mode .kid-c {
+  --skin: #d99a73;
+  --hair: #1c1518;
+}
+
+.superhero-audience-mode .kid-c .kid-hair {
+  display: block;
+  left: -4px;
+  right: -4px;
+  top: -10px;
+  height: 40px;
+  border-radius: 28px 28px 12px 12px;
+  background: #1c1518;
+}
+
+.superhero-audience-mode .kid-c .kid-hair::after {
+  content: "";
+  left: auto;
+  right: -5px;
+  top: 18px;
+  width: 16px;
+  height: 48px;
+  border-radius: 12px;
+  background: #1c1518;
+}
+
+.superhero-audience-mode .kid-c .kid-head::before {
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: 8px;
+  height: 14px;
+  clip-path: polygon(0 0, 36% 0, 50% 100%, 64% 0, 100% 0, 82% 12px, 18% 12px);
+  background: #e4b948;
+}
+
+.superhero-audience-mode .kid-c .kid-body {
+  background:
+    linear-gradient(180deg, #b92735 0 54%, #e4b948 55% 62%, #2457a6 63% 100%);
+}
+
+.superhero-audience-mode .kid-c .desk::after {
+  content: "Wonder Woman";
+}
+
+.superhero-audience-mode .kid-d {
+  --skin: #e3a46f;
+  --hair: #1d1a1b;
+}
+
+.superhero-audience-mode .kid-d::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  bottom: 34px;
+  width: 92px;
+  height: 108px;
+  border-radius: 28px 28px 18px 18px;
+  background: #c92f3d;
+  transform: translateY(8px);
+}
+
+.superhero-audience-mode .kid-d .kid-hair {
+  display: block;
+  left: 5px;
+  right: 5px;
+  top: -7px;
+  height: 24px;
+  border-radius: 20px 20px 8px 8px;
+  background: #1d1a1b;
+}
+
+.superhero-audience-mode .kid-d .kid-head::before {
+  content: "";
+  position: absolute;
+  left: 29px;
+  top: 9px;
+  width: 12px;
+  height: 18px;
+  border-radius: 50%;
+  border-left: 5px solid #1d1a1b;
+  transform: rotate(-35deg);
+}
+
+.superhero-audience-mode .kid-d .kid-body {
+  background: #2457a6;
+}
+
+.superhero-audience-mode .kid-d .kid-body::after {
+  content: "S";
+  position: absolute;
+  left: 50%;
+  top: 17px;
+  width: 32px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  clip-path: polygon(50% 0, 100% 25%, 84% 100%, 16% 100%, 0 25%);
+  background: #e4b948;
+  color: #c92f3d;
+  font-size: 1rem;
+  font-weight: 950;
+  transform: translateX(-50%);
+}
+
+.superhero-audience-mode .kid-d .desk::after {
+  content: "Superman";
+}
+
+.superhero-audience-mode .kid-e .kid-head {
+  height: 74px;
+  border-radius: 40% 40% 50% 50%;
+  background:
+    linear-gradient(90deg, #0c1016 0 18%, #28313e 19% 50%, #0c1016 51% 100%);
+}
+
+.superhero-audience-mode .kid-e .kid-head::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 31px;
+  height: 4px;
+  border-radius: 999px;
+  background: #8f1f2d;
+  box-shadow: 0 9px 0 2px rgba(0, 0, 0, 0.28);
+}
+
+.superhero-audience-mode .kid-e .kid-head::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 11px;
+  width: 18px;
+  height: 20px;
+  border-radius: 4px 4px 10px 10px;
+  background:
+    repeating-linear-gradient(90deg, #5d6774 0 2px, #141a23 2px 5px);
+  transform: translateX(-50%);
+}
+
+.superhero-audience-mode .kid-e .kid-body {
+  background:
+    linear-gradient(180deg, #111822 0 100%);
+}
+
+.superhero-audience-mode .kid-e .kid-body::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 18px;
+  width: 30px;
+  height: 24px;
+  border-radius: 4px;
+  background:
+    linear-gradient(#89919c 0 0) 7px 7px / 16px 3px no-repeat,
+    linear-gradient(90deg, #c92535 0 8px, #2457a6 8px 16px, #e4b948 16px 24px) center 15px / 24px 5px no-repeat,
+    #252f3a;
+  transform: translateX(-50%);
+}
+
+.superhero-audience-mode .kid-e .kid-arm {
+  background: #151b24;
+}
+
+.superhero-audience-mode .kid-e .kid-mouth {
+  display: none;
+}
+
+.superhero-audience-mode .kid-e .desk::after {
+  content: "Darth Vader";
+}
+
+.online-audience-mode .audience-row {
+  min-height: 326px;
+  grid-template-columns: repeat(5, minmax(88px, 1fr));
+  gap: 8px;
+  align-items: stretch;
+  padding: 48px 12px 12px;
+  background:
+    linear-gradient(180deg, rgba(20, 29, 42, 0.12), transparent 42%),
+    #202938;
+}
+
+.online-audience-mode .audience-row::before {
+  left: 12px;
+  right: 12px;
+  top: 12px;
+  height: 26px;
+  border-color: #3c4656;
+  background:
+    linear-gradient(#ec6a5e 0 0) 14px 9px / 8px 8px no-repeat,
+    linear-gradient(#f5bf4f 0 0) 30px 9px / 8px 8px no-repeat,
+    linear-gradient(#61c46e 0 0) 46px 9px / 8px 8px no-repeat,
+    linear-gradient(#586272 0 0) calc(100% - 104px) 8px / 72px 10px no-repeat,
+    #151c28;
+}
+
+.online-audience-mode .kid,
+.online-audience-mode .kid:nth-child(n + 6) {
+  position: relative;
+  min-height: 112px;
+  display: grid;
+  align-content: stretch;
+  justify-items: stretch;
+  overflow: hidden;
+  border: 1px solid #3b4656;
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 50% 34%, rgba(255, 255, 255, 0.16) 0 24px, transparent 25px),
+    linear-gradient(135deg, #314158, #1d2635);
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.08);
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+.online-audience-mode .kid-head,
+.online-audience-mode .kid-hair,
+.online-audience-mode .kid-eye,
+.online-audience-mode .kid-mouth,
+.online-audience-mode .kid-arm,
+.online-audience-mode .desk-item {
+  display: none;
+}
+
+.online-audience-mode .kid-body {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  top: 18px;
+  width: 42px;
+  height: 42px;
+  margin: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--shirt);
+  box-shadow: inset -5px -7px rgba(0, 0, 0, 0.15);
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 950;
+  transform: translateX(-50%);
+}
+
+.online-audience-mode .kid-body::before {
+  content: "";
+  display: none;
+}
+
+.online-audience-mode .kid-body::after {
+  position: static;
+  display: block;
+  width: auto;
+  height: auto;
+  background: none;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  transform: none;
+}
+
+.online-audience-mode .desk {
+  position: absolute;
+  z-index: 3;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 28px;
+  margin: 0;
+  border-radius: 0;
+  background: rgba(10, 15, 24, 0.82);
+  box-shadow: none;
+}
+
+.online-audience-mode .desk::after {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 7px;
+  overflow: hidden;
+  color: #f4f7f9;
+  font-size: 0.72rem;
+  font-weight: 850;
+  line-height: 1;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.online-audience-mode .kid::after {
+  content: "";
+  position: absolute;
+  z-index: 4;
+  right: 8px;
+  top: 8px;
+  min-width: 26px;
+  min-height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 950;
+  line-height: 1;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 240ms ease, transform 240ms ease;
+}
+
+.online-audience-mode .kid.ready,
+.online-audience-mode .kid.curious,
+.online-audience-mode .kid.focused,
+.online-audience-mode .kid.delighted {
+  opacity: 1;
+  filter: none;
+  animation: none;
+  transform: none;
+}
+
+.online-audience-mode .kid.unsure {
+  opacity: 0.75;
+  background:
+    radial-gradient(circle at 50% 34%, rgba(255, 255, 255, 0.11) 0 24px, transparent 25px),
+    linear-gradient(135deg, #2b3545, #181f2b);
+}
+
+.online-audience-mode .kid.distracted {
+  opacity: 0.9;
+  filter: none;
+  transform: none;
+  background:
+    linear-gradient(135deg, #131820, #0b0f15);
+  border-color: #222b38;
+}
+
+.online-audience-mode .kid.distracted .kid-body {
+  width: 58px;
+  height: 24px;
+  border-radius: 999px;
+  background: #27303d;
+  box-shadow: none;
+  color: #99a5b5;
+  font-size: 0.64rem;
+}
+
+.online-audience-mode .kid.distracted .kid-body::after {
+  content: "OFF";
+}
+
+.online-audience-mode .kid.curious::after {
+  content: "+1";
+  background: #0d7c80;
+  opacity: 0.72;
+  transform: translateY(0);
+}
+
+.online-audience-mode .kid.focused::after {
+  content: "+1";
+  background: #2f8a57;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.online-audience-mode .kid.delighted::after {
+  content: "<3";
+  background: #d8674d;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.online-audience-mode .kid-a {
+  --shirt: #3f8e99;
+}
+
+.online-audience-mode .kid-b {
+  --shirt: #7a8dce;
+}
+
+.online-audience-mode .kid-c {
+  --shirt: #d8674d;
+}
+
+.online-audience-mode .kid-d {
+  --shirt: #6d4d69;
+}
+
+.online-audience-mode .kid-e {
+  --shirt: #2f8a57;
+}
+
+.online-audience-mode .kid-f {
+  --shirt: #c28f2c;
+}
+
+.online-audience-mode .kid-g {
+  --shirt: #5c79a6;
+}
+
+.online-audience-mode .kid-h {
+  --shirt: #b85e77;
+}
+
+.online-audience-mode .kid-i {
+  --shirt: #58786b;
+}
+
+.online-audience-mode .kid-j {
+  --shirt: #9b6642;
+}
+
+.online-audience-mode .kid-a .kid-body::after {
+  content: "A";
+}
+
+.online-audience-mode .kid-b .kid-body::after {
+  content: "B";
+}
+
+.online-audience-mode .kid-c .kid-body::after {
+  content: "C";
+}
+
+.online-audience-mode .kid-d .kid-body::after {
+  content: "D";
+}
+
+.online-audience-mode .kid-e .kid-body::after {
+  content: "E";
+}
+
+.online-audience-mode .kid-f .kid-body::after {
+  content: "F";
+}
+
+.online-audience-mode .kid-g .kid-body::after {
+  content: "G";
+}
+
+.online-audience-mode .kid-h .kid-body::after {
+  content: "H";
+}
+
+.online-audience-mode .kid-i .kid-body::after {
+  content: "I";
+}
+
+.online-audience-mode .kid-j .kid-body::after {
+  content: "J";
+}
+
+.online-audience-mode .kid-a .desk::after {
+  content: "Ari";
+}
+
+.online-audience-mode .kid-b .desk::after {
+  content: "Bo";
+}
+
+.online-audience-mode .kid-c .desk::after {
+  content: "Cy";
+}
+
+.online-audience-mode .kid-d .desk::after {
+  content: "Dee";
+}
+
+.online-audience-mode .kid-e .desk::after {
+  content: "Eli";
+}
+
+.online-audience-mode .kid-f .desk::after {
+  content: "Fay";
+}
+
+.online-audience-mode .kid-g .desk::after {
+  content: "Gus";
+}
+
+.online-audience-mode .kid-h .desk::after {
+  content: "Hal";
+}
+
+.online-audience-mode .kid-i .desk::after {
+  content: "Ira";
+}
+
+.online-audience-mode .kid-j .desk::after {
+  content: "Jo";
+}
+
 .kid-eye {
   position: absolute;
   top: 33px;
@@ -1555,11 +2240,43 @@ canvas {
     text-align: left;
   }
 
+  .audience-choice {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .audience-row {
     min-height: 224px;
     grid-template-columns: repeat(5, minmax(52px, 1fr));
     gap: 2px;
     padding-inline: 6px;
+  }
+
+  .online-audience-mode .audience-row {
+    min-height: 392px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    padding: 44px 8px 8px;
+  }
+
+  .online-audience-mode .kid,
+  .online-audience-mode .kid:nth-child(n + 6) {
+    min-height: 82px;
+  }
+
+  .online-audience-mode .kid-body {
+    top: 12px;
+    width: 34px;
+    height: 34px;
+    font-size: 0.72rem;
+  }
+
+  .online-audience-mode .desk {
+    height: 24px;
+  }
+
+  .online-audience-mode .desk::after {
+    top: 6px;
+    font-size: 0.66rem;
   }
 
   .kid {

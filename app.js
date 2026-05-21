@@ -193,22 +193,43 @@ function setAudienceType(type) {
   resetAudience();
 }
 
-function updateAudiencePresentation() {
-  const effectiveType = currentMode === "business"
+function getEffectiveAudienceType() {
+  return currentMode === "business"
     ? "business"
     : currentMode === "audience"
       ? currentAudienceType
       : "kids";
+}
+
+function updateAudiencePresentation() {
+  const effectiveType = getEffectiveAudienceType();
+  const audienceLabels = {
+    kids: ["Maya", "Noah", "Sam", "Ivy", "Leo"],
+    business: ["Business listener 1", "Business listener 2", "Business listener 3", "Business listener 4", "Business listener 5"],
+    duo: ["Antonie", "Steffen", "Hidden listener", "Hidden listener", "Hidden listener"],
+    superheroes: ["Spider-Man", "Hulk", "Wonder Woman", "Superman", "Darth Vader"],
+    online: ["Ari", "Bo", "Cy", "Dee", "Eli", "Fay", "Gus", "Hal", "Ira", "Jo"]
+  };
 
   document.body.classList.toggle("business-mode", effectiveType === "business");
   document.body.classList.toggle("duo-audience-mode", effectiveType === "duo");
+  document.body.classList.toggle("superhero-audience-mode", effectiveType === "superheroes");
+  document.body.classList.toggle("online-audience-mode", effectiveType === "online");
 
   const title = effectiveType === "business"
     ? "Meeting room"
     : effectiveType === "duo"
       ? "Antonie & Steffen"
-      : "Classroom";
+      : effectiveType === "superheroes"
+        ? "Superhero audience"
+        : effectiveType === "online"
+          ? "Online meeting"
+          : "Classroom";
   document.querySelector("#audience-title").textContent = title;
+
+  kids.forEach((kid, index) => {
+    kid.setAttribute("aria-label", audienceLabels[effectiveType][index] || "Hidden listener");
+  });
 }
 
 function updateOwnTextVisibility() {
@@ -1327,19 +1348,28 @@ function stopLivePraatAnalysis() {
 function updateAudience(score) {
   const attention = clamp(Math.round(score), 0, 100);
   attentionMeter.style.width = `${attention}%`;
+  const isOnlineAudience = getEffectiveAudienceType() === "online";
 
   if (attention < 28) {
     attentionLabel.textContent = "Attention slipping";
-    setKidStates(["distracted", "unsure", "distracted", "distracted", "unsure"]);
+    setKidStates(isOnlineAudience
+      ? ["distracted", "distracted", "unsure", "distracted", "distracted", "unsure", "distracted", "distracted", "unsure", "distracted"]
+      : ["distracted", "unsure", "distracted", "distracted", "unsure"]);
   } else if (attention < 52) {
     attentionLabel.textContent = "Trying to follow";
-    setKidStates(["unsure", "curious", "unsure", "distracted", "curious"]);
+    setKidStates(isOnlineAudience
+      ? ["unsure", "curious", "unsure", "distracted", "curious", "unsure", "curious", "distracted", "unsure", "curious"]
+      : ["unsure", "curious", "unsure", "distracted", "curious"]);
   } else if (attention < 76) {
     attentionLabel.textContent = "Listening";
-    setKidStates(["focused", "curious", "focused", "curious", "focused"]);
+    setKidStates(isOnlineAudience
+      ? ["focused", "curious", "focused", "curious", "focused", "curious", "focused", "focused", "curious", "focused"]
+      : ["focused", "curious", "focused", "curious", "focused"]);
   } else {
     attentionLabel.textContent = "Fully engaged";
-    setKidStates(["delighted", "focused", "delighted", "focused", "delighted"]);
+    setKidStates(isOnlineAudience
+      ? ["delighted", "focused", "delighted", "focused", "delighted", "focused", "delighted", "delighted", "focused", "delighted"]
+      : ["delighted", "focused", "delighted", "focused", "delighted"]);
   }
 }
 
