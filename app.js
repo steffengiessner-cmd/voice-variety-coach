@@ -140,6 +140,9 @@ let liveMonitorGain;
 let livePcmChunks = [];
 let livePcmSampleCount = 0;
 let livePcmTotalSamples = 0;
+let recordingPcmChunks = [];
+let recordingPcmSampleCount = 0;
+let recordingPcmSampleRate = 0;
 let livePraatInterval;
 let isLivePraatAnalyzing = false;
 let audienceAttention = AUDIENCE_START_ATTENTION;
@@ -1189,6 +1192,10 @@ function encodePcmWav(floatSamples, sampleRate) {
 }
 
 async function convertRecordingToWav(recordingBlob) {
+  if (recordingPcmSampleCount > 0 && recordingPcmSampleRate > 0) {
+    return encodePcmWav(getRecordingPcm(), recordingPcmSampleRate);
+  }
+
   const arrayBuffer = await recordingBlob.arrayBuffer();
   const AudioContextConstructor = getAudioContextConstructor();
   const decodeContext = new AudioContextConstructor();
@@ -1286,6 +1293,9 @@ function resetLivePraatBuffers() {
   livePcmChunks = [];
   livePcmSampleCount = 0;
   livePcmTotalSamples = 0;
+  recordingPcmChunks = [];
+  recordingPcmSampleCount = 0;
+  recordingPcmSampleRate = 0;
   isLivePraatAnalyzing = false;
 }
 
@@ -1305,7 +1315,22 @@ function appendLivePcm(inputBuffer) {
   livePcmChunks.push(copy);
   livePcmSampleCount += copy.length;
   livePcmTotalSamples += copy.length;
+  recordingPcmChunks.push(copy);
+  recordingPcmSampleCount += copy.length;
+  recordingPcmSampleRate = audioContext?.sampleRate || inputBuffer.sampleRate || recordingPcmSampleRate;
   trimLivePcmBuffer();
+}
+
+function getRecordingPcm() {
+  const result = new Float32Array(recordingPcmSampleCount);
+  let offset = 0;
+
+  recordingPcmChunks.forEach(chunk => {
+    result.set(chunk, offset);
+    offset += chunk.length;
+  });
+
+  return result;
 }
 
 function getRecentLivePcm() {
@@ -1395,7 +1420,6 @@ function stopLivePraatAnalysis() {
 
   liveAudioProcessor = null;
   liveMonitorGain = null;
-  resetLivePraatBuffers();
 }
 
 function updateAudience(score) {
