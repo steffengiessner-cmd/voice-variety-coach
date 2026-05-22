@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Voice Variety Coach</title>
-    <link rel="stylesheet" href="styles.css?v=online-faces" />
+    <link rel="stylesheet" href="styles.css?v=microphone-input" />
   </head>
   <body>
     <main class="app-shell">
@@ -242,6 +242,12 @@
           <button class="primary-button" id="recordButton" type="button">Start Recording</button>
           <button class="secondary-button" id="playButton" type="button" disabled>Play Back</button>
         </div>
+        <label class="microphone-picker" for="microphoneSelect">
+          <span>Microphone input</span>
+          <select id="microphoneSelect">
+            <option value="">Default microphone</option>
+          </select>
+        </label>
         <p class="recording-notice" id="recordingNotice" aria-live="polite"></p>
         <audio class="playback-audio" id="playbackAudio" controls preload="metadata"></audio>
 
@@ -322,6 +328,6 @@
       </aside>
     </main>
 
-    <script src="app.js?v=online-faces"></script>
+    <script src="app.js?v=microphone-input"></script>
   </body>
 </html>

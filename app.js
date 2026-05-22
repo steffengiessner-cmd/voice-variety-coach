@@ -77,6 +77,7 @@ const audienceTypeInputs = Array.from(document.querySelectorAll("input[name='aud
 const newPromptButton = document.querySelector("#newPromptButton");
 const recordButton = document.querySelector("#recordButton");
 const playButton = document.querySelector("#playButton");
+const microphoneSelect = document.querySelector("#microphoneSelect");
 const playbackAudio = document.querySelector("#playbackAudio");
 const recordingNotice = document.querySelector("#recordingNotice");
 const sessionPill = document.querySelector("#sessionPill");
@@ -133,6 +134,7 @@ let timedScrollInterval;
 let currentMode = "story";
 let currentScrollMode = "voice";
 let currentAudienceType = "duo";
+let selectedMicrophoneId = "";
 let liveAudioProcessor;
 let liveMonitorGain;
 let livePcmChunks = [];
@@ -1020,6 +1022,42 @@ function getAudioContextConstructor() {
   return window.AudioContext || window.webkitAudioContext;
 }
 
+function getSelectedAudioConstraint() {
+  return selectedMicrophoneId
+    ? { deviceId: { exact: selectedMicrophoneId } }
+    : true;
+}
+
+async function refreshMicrophoneInputs() {
+  if (!navigator.mediaDevices?.enumerateDevices || !microphoneSelect) return;
+
+  let microphones = [];
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    microphones = devices.filter(device => device.kind === "audioinput");
+  } catch (error) {
+    return;
+  }
+
+  const previousSelection = selectedMicrophoneId;
+  microphoneSelect.innerHTML = "";
+  const defaultOption = document.createElement("option");
+  defaultOption.value = "";
+  defaultOption.textContent = "Default microphone";
+  microphoneSelect.append(defaultOption);
+
+  microphones.forEach((device, index) => {
+    const option = document.createElement("option");
+    option.value = device.deviceId;
+    option.textContent = device.label || `Microphone ${index + 1}`;
+    microphoneSelect.append(option);
+  });
+
+  const hasPreviousSelection = microphones.some(device => device.deviceId === previousSelection);
+  selectedMicrophoneId = hasPreviousSelection ? previousSelection : "";
+  microphoneSelect.value = selectedMicrophoneId;
+}
+
 function canUseLocalPraat() {
   return ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
 }
@@ -1803,7 +1841,8 @@ async function startRecording() {
     throw new Error(microphoneIssue);
   }
 
-  stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  stream = await navigator.mediaDevices.getUserMedia({ audio: getSelectedAudioConstraint() });
+  await refreshMicrophoneInputs();
   const AudioContextConstructor = getAudioContextConstructor();
   audioContext = new AudioContextConstructor();
   analyser = audioContext.createAnalyser();
@@ -1851,6 +1890,7 @@ async function startRecording() {
   document.body.classList.add("is-recording");
   recordButton.textContent = "Stop Recording";
   recordButton.classList.add("recording");
+  microphoneSelect.disabled = true;
   playButton.disabled = true;
   setRecordingNotice("Recording. The audience will listen first, then average its attention over time.", "active");
   feedbackText.textContent = currentMode === "own"
@@ -1881,6 +1921,7 @@ function finishRecording() {
   document.body.classList.remove("is-recording");
   recordButton.textContent = "Start Recording";
   recordButton.classList.remove("recording");
+  microphoneSelect.disabled = false;
   setRecordingNotice("Recording complete. Play it back or try another take.", "success");
   analyzeRecording();
   analyzeWithPraat(blob);
@@ -1904,6 +1945,7 @@ async function toggleRecording() {
     document.body.classList.remove("is-recording");
     recordButton.textContent = "Start Recording";
     recordButton.classList.remove("recording");
+    microphoneSelect.disabled = false;
     setRecordingNotice(message, "warning");
     feedbackText.textContent = message;
     stopLivePraatAnalysis();
@@ -1953,12 +1995,20 @@ audienceTypeInputs.forEach(input => {
 });
 recordButton.addEventListener("click", toggleRecording);
 playButton.addEventListener("click", playRecording);
+microphoneSelect.addEventListener("change", () => {
+  selectedMicrophoneId = microphoneSelect.value;
+});
+
+if (navigator.mediaDevices?.addEventListener) {
+  navigator.mediaDevices.addEventListener("devicechange", refreshMicrophoneInputs);
+}
 
 setReadingSize("large");
 setScrollMode("voice");
 setAudienceType("duo");
 setMode("story");
 drawIdleWave();
+refreshMicrophoneInputs();
 
 const firstMicrophoneIssue = getMicrophoneIssue();
 if (firstMicrophoneIssue) {

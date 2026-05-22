@@ -2065,6 +2065,41 @@ body.business-mode {
   margin-bottom: 10px;
 }
 
+.microphone-picker {
+  display: grid;
+  gap: 7px;
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.microphone-picker select {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 38px 0 12px;
+  background: #ffffff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 750;
+  text-transform: none;
+}
+
+.microphone-picker select:focus {
+  border-color: var(--accent);
+  outline: 2px solid rgba(13, 124, 128, 0.16);
+}
+
+.microphone-picker select:disabled {
+  cursor: not-allowed;
+  color: #8e9aa7;
+  background: #f2f4f6;
+}
+
 .primary-button,
 .secondary-button {
   min-height: 48px;
