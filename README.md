@@ -23,9 +23,10 @@ http://localhost:5173
 
 1. Click **Start Recording**.
 2. Allow microphone access when the browser asks.
-3. Read the prompt aloud for 30-60 seconds.
-4. Click **Stop Recording**.
-5. Review the score and play back your recording.
+3. If you use an external microphone, choose it from **Microphone input**. Device names may appear after permission is granted.
+4. Read the prompt aloud for 30-60 seconds.
+5. Click **Stop Recording**.
+6. Review the score and play back your recording.
 
 ## Publish With GitHub Pages
 

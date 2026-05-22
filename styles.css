@@ -2100,6 +2100,14 @@ body.business-mode {
   background: #f2f4f6;
 }
 
+.microphone-picker small {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.35;
+  text-transform: none;
+}
+
 .primary-button,
 .secondary-button {
   min-height: 48px;
@@ -2364,16 +2372,35 @@ canvas {
 
   .prompt-tools {
     width: 100%;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
   }
 
-  .font-size-switch,
   .scroll-mode-switch {
-    flex: 1;
+    grid-column: 1 / -1;
+  }
+
+  .font-size-switch {
+    min-width: 0;
   }
 
   .reading-text {
-    height: 138px;
+    height: min(232px, 38vh);
+    font-size: 1.28rem;
+    line-height: 1.38;
+  }
+
+  body.reading-size-small .reading-text {
+    font-size: 0.98rem;
+  }
+
+  body.reading-size-medium .reading-text {
+    font-size: 1.12rem;
+  }
+
+  body.reading-size-large .reading-text {
+    font-size: 1.28rem;
   }
 
   .stage-header {

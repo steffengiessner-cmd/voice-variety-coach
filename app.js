@@ -1028,6 +1028,21 @@ function getSelectedAudioConstraint() {
     : true;
 }
 
+async function getMicrophoneStream() {
+  try {
+    return await navigator.mediaDevices.getUserMedia({ audio: getSelectedAudioConstraint() });
+  } catch (error) {
+    if (!selectedMicrophoneId || !["NotFoundError", "OverconstrainedError"].includes(error.name)) {
+      throw error;
+    }
+
+    selectedMicrophoneId = "";
+    if (microphoneSelect) microphoneSelect.value = "";
+    setRecordingNotice("Selected microphone was not available, so I switched back to the default input.", "warning");
+    return navigator.mediaDevices.getUserMedia({ audio: true });
+  }
+}
+
 async function refreshMicrophoneInputs() {
   if (!navigator.mediaDevices?.enumerateDevices || !microphoneSelect) return;
 
@@ -1841,7 +1856,7 @@ async function startRecording() {
     throw new Error(microphoneIssue);
   }
 
-  stream = await navigator.mediaDevices.getUserMedia({ audio: getSelectedAudioConstraint() });
+  stream = await getMicrophoneStream();
   await refreshMicrophoneInputs();
   const AudioContextConstructor = getAudioContextConstructor();
   audioContext = new AudioContextConstructor();
