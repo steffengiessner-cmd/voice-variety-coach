@@ -1103,6 +1103,7 @@ body.business-mode {
 
 .superhero-audience-mode .kid {
   min-height: 212px;
+  transition: transform 140ms cubic-bezier(0.2, 0.9, 0.25, 1.35), opacity 140ms ease, filter 140ms ease;
 }
 
 .superhero-audience-mode .kid-hair,
@@ -1117,6 +1118,7 @@ body.business-mode {
   box-shadow:
     inset -8px -10px rgba(15, 20, 28, 0.2),
     0 4px 0 rgba(23, 33, 43, 0.07);
+  transition: transform 140ms cubic-bezier(0.2, 0.9, 0.25, 1.35), box-shadow 140ms ease;
 }
 
 .superhero-audience-mode .kid-head::before,
@@ -1131,6 +1133,7 @@ body.business-mode {
   height: 78px;
   border-radius: 22px 22px 10px 10px;
   box-shadow: inset -7px -10px rgba(8, 12, 20, 0.16);
+  transition: transform 140ms ease, box-shadow 140ms ease;
 }
 
 .superhero-audience-mode .kid-mouth {
@@ -1303,6 +1306,24 @@ body.business-mode {
   background: #e4b948;
 }
 
+.superhero-audience-mode .kid-c .kid-eye {
+  display: block;
+  z-index: 4;
+  top: 36px;
+  width: 8px;
+  height: 10px;
+  background: #1b2230;
+  box-shadow: inset 2px 2px rgba(255, 255, 255, 0.42);
+}
+
+.superhero-audience-mode .kid-c .kid-eye-left {
+  left: 18px;
+}
+
+.superhero-audience-mode .kid-c .kid-eye-right {
+  right: 18px;
+}
+
 .superhero-audience-mode .kid-c .kid-body {
   background:
     linear-gradient(180deg, #b92735 0 54%, #e4b948 55% 62%, #2457a6 63% 100%);
@@ -1349,6 +1370,24 @@ body.business-mode {
   border-radius: 50%;
   border-left: 5px solid #1d1a1b;
   transform: rotate(-35deg);
+}
+
+.superhero-audience-mode .kid-d .kid-eye {
+  display: block;
+  z-index: 4;
+  top: 34px;
+  width: 8px;
+  height: 10px;
+  background: #17212b;
+  box-shadow: inset 2px 2px rgba(255, 255, 255, 0.38);
+}
+
+.superhero-audience-mode .kid-d .kid-eye-left {
+  left: 19px;
+}
+
+.superhero-audience-mode .kid-d .kid-eye-right {
+  right: 19px;
 }
 
 .superhero-audience-mode .kid-d .kid-body {
@@ -1438,6 +1477,133 @@ body.business-mode {
 
 .superhero-audience-mode .kid-e .desk::after {
   content: "Darth Vader";
+}
+
+.superhero-audience-mode .kid.ready {
+  transform: translateY(-2px);
+}
+
+.superhero-audience-mode .kid.unsure {
+  transform: translateY(6px) rotate(-4deg);
+  opacity: 0.9;
+  animation: superhero-wobble 520ms ease-in-out infinite;
+}
+
+.superhero-audience-mode .kid.unsure .kid-head {
+  transform: rotate(-9deg) translateY(1px);
+}
+
+.superhero-audience-mode .kid.unsure .kid-mouth {
+  width: 15px;
+  height: 4px;
+  bottom: 18px;
+}
+
+.superhero-audience-mode .kid.curious {
+  transform: translateY(-10px) scale(1.05);
+  animation: superhero-ready 760ms ease-in-out infinite;
+}
+
+.superhero-audience-mode .kid.curious .kid-head {
+  transform: rotate(9deg) translateY(-4px);
+}
+
+.superhero-audience-mode .kid.curious .kid-eye {
+  transform: translateY(-3px) scaleY(1.22);
+}
+
+.superhero-audience-mode .kid.focused {
+  transform: translateY(-18px) scale(1.1);
+  filter: saturate(1.2);
+  animation: superhero-bounce 700ms ease-in-out infinite;
+}
+
+.superhero-audience-mode .kid.focused .kid-head {
+  transform: translateY(-3px);
+  box-shadow:
+    inset -8px -10px rgba(15, 20, 28, 0.14),
+    0 8px 0 rgba(23, 33, 43, 0.08);
+}
+
+.superhero-audience-mode .kid.focused .kid-mouth {
+  width: 28px;
+  height: 14px;
+  border-bottom-width: 4px;
+}
+
+.superhero-audience-mode .kid.delighted {
+  transform: translateY(-26px) scale(1.16);
+  filter: saturate(1.32);
+  animation: superhero-celebrate 560ms ease-in-out infinite;
+}
+
+.superhero-audience-mode .kid.delighted .kid-head {
+  transform: translateY(-5px) rotate(-4deg);
+}
+
+.superhero-audience-mode .kid.delighted .kid-mouth {
+  width: 32px;
+  height: 20px;
+  border-bottom-width: 5px;
+}
+
+.superhero-audience-mode .kid.delighted .kid-arm-left {
+  transform: rotate(-72deg) translateY(-17px);
+}
+
+.superhero-audience-mode .kid.delighted .kid-arm-right {
+  transform: rotate(72deg) translateY(-17px);
+}
+
+.superhero-audience-mode .kid.distracted {
+  transform: translateY(18px) rotate(-6deg) scale(0.94);
+  opacity: 0.62;
+  filter: saturate(0.62);
+}
+
+.superhero-audience-mode .kid.distracted .kid-head {
+  transform: rotate(22deg) translate(10px, 4px);
+}
+
+.superhero-audience-mode .kid.distracted .kid-eye {
+  height: 3px;
+  transform: translateY(4px) scaleX(1.25);
+}
+
+.superhero-audience-mode .kid.distracted .kid-mouth {
+  width: 19px;
+  height: 4px;
+  bottom: 18px;
+  border-radius: 999px;
+}
+
+.superhero-audience-mode .kid.distracted .kid-body {
+  transform: translateY(5px) rotate(-3deg);
+}
+
+.superhero-audience-mode .kid-a.focused .kid-head::before,
+.superhero-audience-mode .kid-a.delighted .kid-head::before {
+  transform: rotate(-16deg) scale(1.12);
+}
+
+.superhero-audience-mode .kid-b.focused .kid-body,
+.superhero-audience-mode .kid-b.delighted .kid-body {
+  box-shadow: inset -7px -10px rgba(8, 12, 20, 0.1), 0 0 0 5px rgba(98, 168, 90, 0.18);
+}
+
+.superhero-audience-mode .kid-c.delighted .kid-head {
+  transform: translateY(-5px) rotate(5deg);
+}
+
+.superhero-audience-mode .kid-d.focused::before,
+.superhero-audience-mode .kid-d.delighted::before {
+  animation: superhero-cape 520ms ease-in-out infinite;
+}
+
+.superhero-audience-mode .kid-e.focused .kid-head::before,
+.superhero-audience-mode .kid-e.delighted .kid-head::before {
+  background: #d73143;
+  box-shadow: 0 9px 0 2px rgba(0, 0, 0, 0.2), 0 0 12px rgba(215, 49, 67, 0.62);
 }
 
 .online-audience-mode .audience-row {
@@ -2055,6 +2221,68 @@ body.business-mode {
 
   50% {
     translate: 0 -3px;
+  }
+}
+
+@keyframes superhero-ready {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+
+  50% {
+    translate: 0 -5px;
+  }
+}
+
+@keyframes superhero-bounce {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+
+  45% {
+    translate: 0 -9px;
+  }
+}
+
+@keyframes superhero-celebrate {
+  0%,
+  100% {
+    translate: 0 0;
+    rotate: 0deg;
+  }
+
+  35% {
+    translate: 0 -12px;
+    rotate: -3deg;
+  }
+
+  70% {
+    translate: 0 -5px;
+    rotate: 3deg;
+  }
+}
+
+@keyframes superhero-wobble {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+
+  50% {
+    translate: -3px 0;
+  }
+}
+
+@keyframes superhero-cape {
+  0%,
+  100% {
+    transform: translateY(8px) skewX(0deg);
+  }
+
+  50% {
+    transform: translateY(5px) skewX(-7deg);
   }
 }
 

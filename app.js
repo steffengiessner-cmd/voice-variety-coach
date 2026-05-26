@@ -206,6 +206,10 @@ function getEffectiveAudienceType() {
       : "kids";
 }
 
+function isSuperheroAudience() {
+  return getEffectiveAudienceType() === "superheroes";
+}
+
 function updateAudiencePresentation() {
   const effectiveType = getEffectiveAudienceType();
   const audienceLabels = {
@@ -1475,8 +1479,9 @@ function getRecentProsodyResult(windowSeconds = PRAAT_LIVE_WINDOW_SECONDS, elaps
 
 function updateAudienceOverTime(result) {
   const momentScore = clamp(result.score, 0, 100);
+  const memoryWeight = isSuperheroAudience() ? 0.38 : AUDIENCE_MEMORY_WEIGHT;
   audienceAttention = clamp(
-    audienceAttention * AUDIENCE_MEMORY_WEIGHT + momentScore * (1 - AUDIENCE_MEMORY_WEIGHT),
+    audienceAttention * memoryWeight + momentScore * (1 - memoryWeight),
     0,
     100
   );
