@@ -1256,11 +1256,17 @@ function applyPraatAnalysis(result, options = {}) {
 }
 
 async function sendWavToPraat(wavBlob) {
-  const response = await fetch(PRAAT_ANALYZE_URL, {
-    method: "POST",
-    headers: { "Content-Type": "audio/wav" },
-    body: wavBlob
-  });
+  let response;
+  try {
+    response = await fetch(PRAAT_ANALYZE_URL, {
+      method: "POST",
+      headers: { "Content-Type": "audio/wav" },
+      body: wavBlob
+    });
+  } catch (error) {
+    throw new Error("Start the local Praat backend, then try again.");
+  }
+
   const result = await response.json();
 
   if (!response.ok || !result.ok) {
