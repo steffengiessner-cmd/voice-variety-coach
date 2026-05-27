@@ -828,11 +828,16 @@ function renderPitchDetail(result) {
       <strong>${pitchZone.label}</strong>
       <span>${pitchZone.note}</span>
     </div>
+    <div class="pitch-range-card">
+      <span>Pitch range</span>
+      <strong>${formatValue(result.pitchRange, " semitones")}</strong>
+      <small>This is how far your voice moved up and down during the take.</small>
+    </div>
     <div class="detail-bars">
       <div class="detail-bar-row">
         <div>
-          <strong>Melody range</strong>
-          <small>How much the voice moved up and down</small>
+          <strong>Pitch range</strong>
+          <small>More filled means more up-and-down movement</small>
         </div>
         <div class="detail-bar" style="${barStyle(rangeFill)}"><span></span></div>
         <b>${formatValue(result.pitchRange, " st")}</b>

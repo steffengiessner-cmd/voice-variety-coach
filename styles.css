@@ -2654,6 +2654,35 @@ canvas {
   line-height: 1.35;
 }
 
+.pitch-range-card {
+  display: grid;
+  gap: 2px;
+  margin-bottom: 13px;
+  border-radius: 8px;
+  padding: 12px;
+  background: linear-gradient(135deg, #eef9f1, #dcece9);
+  box-shadow: inset 4px 0 0 var(--accent);
+}
+
+.pitch-range-card span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.pitch-range-card strong {
+  font-size: 1.35rem;
+  line-height: 1.1;
+}
+
+.pitch-range-card small {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 720;
+  line-height: 1.35;
+}
+
 .detail-bars {
   display: grid;
   gap: 12px;
