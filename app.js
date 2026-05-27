@@ -112,9 +112,11 @@ const AUDIENCE_START_ATTENTION = 52;
 const VOICE_MATCH_BACKTRACK_WORDS = 8;
 const VOICE_MATCH_LOOKAHEAD_WORDS = 42;
 const VOICE_MATCH_PHRASE_WORDS = 14;
-const VOICE_MATCH_MAX_INTERIM_ADVANCE = 8;
-const VOICE_MATCH_MAX_FINAL_ADVANCE = 16;
-const VOICE_ASSIST_SECONDS_BEFORE_NUDGE = 4;
+const VOICE_MATCH_MAX_INTERIM_ADVANCE = 10;
+const VOICE_MATCH_MAX_FINAL_ADVANCE = 22;
+const VOICE_ASSIST_SECONDS_BEFORE_NUDGE = 2;
+const AUTO_SCROLL_WORDS_PER_SECOND = 2.35;
+const VOICE_ASSIST_WORDS_PER_SECOND = 2.05;
 
 const canvasContext = waveform.getContext("2d");
 let mediaRecorder;
@@ -486,7 +488,7 @@ function startTimedReadingScroll() {
   clearInterval(timedScrollInterval);
   timedScrollInterval = setInterval(() => {
     if (!mediaRecorder || mediaRecorder.state !== "recording") return;
-    const targetDuration = clamp(currentPassageWords.length / 1.85, 40, 75);
+    const targetDuration = clamp(currentPassageWords.length / AUTO_SCROLL_WORDS_PER_SECOND, 28, 62);
     const estimatedWords = Math.floor((getElapsedSeconds() / targetDuration) * currentPassageWords.length);
     updateReadingProgress(
       estimatedWords,
@@ -508,17 +510,19 @@ function startVoiceReadingAssist() {
     const elapsedSeconds = getElapsedSeconds();
     if (elapsedSeconds < VOICE_ASSIST_SECONDS_BEFORE_NUDGE) return;
 
-    const targetDuration = clamp(currentPassageWords.length / 1.65, 45, 85);
+    const targetDuration = clamp(currentPassageWords.length / VOICE_ASSIST_WORDS_PER_SECOND, 32, 72);
     const estimatedWords = Math.floor((elapsedSeconds / targetDuration) * currentPassageWords.length);
-    const shouldNudge = estimatedWords > recognizedWordIndex + 7;
+    const lag = estimatedWords - recognizedWordIndex;
+    const shouldNudge = lag > 4;
 
     if (shouldNudge) {
+      const nudgeWords = lag > 12 ? 2 : 1;
       updateReadingProgress(
-        Math.min(recognizedWordIndex + 1, currentPassageWords.length),
+        Math.min(recognizedWordIndex + nudgeWords, currentPassageWords.length),
         `Following your voice: ${recognizedWordIndex} / ${currentPassageWords.length} words`
       );
     }
-  }, 900);
+  }, 650);
 }
 
 function startReadingTracker() {
@@ -542,8 +546,10 @@ function startReadingTracker() {
   const SpeechRecognition = getSpeechRecognitionConstructor();
 
   if (!SpeechRecognition) {
-    readingStatus.textContent = "Voice following is not available in this browser. Choose Auto or Manual.";
-    readingStatus.classList.add("warning");
+    readingStatus.textContent = "Voice following is using guided scrolling in this browser.";
+    readingStatus.classList.remove("warning");
+    shouldTrackSpeech = true;
+    startVoiceReadingAssist();
     return;
   }
 
