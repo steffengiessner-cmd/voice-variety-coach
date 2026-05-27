@@ -90,6 +90,8 @@ const tempoMetric = document.querySelector("#tempoMetric");
 const pauseMetric = document.querySelector("#pauseMetric");
 const emphasisMetric = document.querySelector("#emphasisMetric");
 const clarityMetric = document.querySelector("#clarityMetric");
+const metricDetailPanel = document.querySelector("#metricDetailPanel");
+const metricDetailButtons = Array.from(document.querySelectorAll("[data-detail-metric]"));
 const determinationMetric = document.querySelector("#determinationMetric");
 const compassionMetric = document.querySelector("#compassionMetric");
 const enthusiasmMetric = document.querySelector("#enthusiasmMetric");
@@ -107,6 +109,12 @@ const PRAAT_LIVE_WINDOW_SECONDS = 8;
 const AUDIENCE_UPDATE_SECONDS = 1;
 const AUDIENCE_MEMORY_WEIGHT = 0.75;
 const AUDIENCE_START_ATTENTION = 52;
+const VOICE_MATCH_BACKTRACK_WORDS = 8;
+const VOICE_MATCH_LOOKAHEAD_WORDS = 42;
+const VOICE_MATCH_PHRASE_WORDS = 14;
+const VOICE_MATCH_MAX_INTERIM_ADVANCE = 8;
+const VOICE_MATCH_MAX_FINAL_ADVANCE = 16;
+const VOICE_ASSIST_SECONDS_BEFORE_NUDGE = 4;
 
 const canvasContext = waveform.getContext("2d");
 let mediaRecorder;
@@ -150,6 +158,8 @@ let audienceAttentionHistory = [];
 let audienceMomentScores = [];
 let audienceAnalysisHistory = [];
 let lastAudienceUpdateAt = 0;
+let latestAnalysisResult = null;
+let activeDetailMetric = "pitch";
 
 function setPrompt() {
   if (currentMode === "own") {
@@ -382,22 +392,67 @@ function wordsSimilar(spokenWord, passageWord) {
 }
 
 function matchTranscriptToPassage(transcript) {
-  const spokenWords = transcript.split(/\s+/).map(normalizeWord).filter(Boolean);
+  const spokenWords = transcript
+    .split(/\s+/)
+    .map(normalizeWord)
+    .filter(Boolean)
+    .slice(-VOICE_MATCH_PHRASE_WORDS);
+
   if (!spokenWords.length) return recognizedWordIndex;
 
-  let cursor = Math.max(0, recognizedWordIndex - 6);
-  let bestCursor = recognizedWordIndex;
-  spokenWords.slice(-36).forEach(spokenWord => {
-    for (let index = cursor; index < Math.min(currentPassageWords.length, cursor + 24); index += 1) {
-      if (wordsSimilar(spokenWord, currentPassageWords[index])) {
-        cursor = index + 1;
-        bestCursor = Math.max(bestCursor, cursor);
-        break;
-      }
-    }
-  });
+  const searchStart = Math.max(0, recognizedWordIndex - VOICE_MATCH_BACKTRACK_WORDS);
+  const searchEnd = Math.min(
+    currentPassageWords.length,
+    recognizedWordIndex + VOICE_MATCH_LOOKAHEAD_WORDS
+  );
+  let best = {
+    endIndex: recognizedWordIndex,
+    matches: 0,
+    score: 0
+  };
 
-  return Math.max(recognizedWordIndex, bestCursor);
+  for (let startIndex = searchStart; startIndex < searchEnd; startIndex += 1) {
+    let passageIndex = startIndex;
+    let matches = 0;
+    let score = 0;
+    let lastMatchIndex = startIndex - 1;
+
+    spokenWords.forEach(spokenWord => {
+      const localEnd = Math.min(searchEnd, passageIndex + 5);
+
+      for (let index = passageIndex; index < localEnd; index += 1) {
+        if (wordsSimilar(spokenWord, currentPassageWords[index])) {
+          const skippedWords = index - passageIndex;
+          matches += 1;
+          score += Math.max(1, 6 - skippedWords);
+          lastMatchIndex = index;
+          passageIndex = index + 1;
+          break;
+        }
+      }
+    });
+
+    if (matches >= 2 && score > best.score) {
+      best = {
+        endIndex: lastMatchIndex + 1,
+        matches,
+        score
+      };
+    }
+  }
+
+  if (best.matches < 2) {
+    return recognizedWordIndex;
+  }
+
+  return Math.max(recognizedWordIndex, best.endIndex);
+}
+
+function updateReadingFromTranscript(transcript, isFinal = false) {
+  const matchedWords = matchTranscriptToPassage(transcript);
+  const maximumAdvance = isFinal ? VOICE_MATCH_MAX_FINAL_ADVANCE : VOICE_MATCH_MAX_INTERIM_ADVANCE;
+  const nextIndex = Math.min(matchedWords, recognizedWordIndex + maximumAdvance);
+  updateReadingProgress(nextIndex);
 }
 
 function updateReadingProgress(nextIndex, message) {
@@ -445,6 +500,27 @@ function stopTimedReadingScroll() {
   timedScrollInterval = null;
 }
 
+function startVoiceReadingAssist() {
+  clearInterval(timedScrollInterval);
+  timedScrollInterval = setInterval(() => {
+    if (!mediaRecorder || mediaRecorder.state !== "recording") return;
+
+    const elapsedSeconds = getElapsedSeconds();
+    if (elapsedSeconds < VOICE_ASSIST_SECONDS_BEFORE_NUDGE) return;
+
+    const targetDuration = clamp(currentPassageWords.length / 1.65, 45, 85);
+    const estimatedWords = Math.floor((elapsedSeconds / targetDuration) * currentPassageWords.length);
+    const shouldNudge = estimatedWords > recognizedWordIndex + 7;
+
+    if (shouldNudge) {
+      updateReadingProgress(
+        Math.min(recognizedWordIndex + 1, currentPassageWords.length),
+        `Following your voice: ${recognizedWordIndex} / ${currentPassageWords.length} words`
+      );
+    }
+  }, 900);
+}
+
 function startReadingTracker() {
   if (!hasReadingPassage()) return;
 
@@ -472,17 +548,17 @@ function startReadingTracker() {
   }
 
   shouldTrackSpeech = true;
+  startVoiceReadingAssist();
   speechRecognizer = new SpeechRecognition();
   speechRecognizer.continuous = true;
   speechRecognizer.interimResults = true;
   speechRecognizer.lang = "en-US";
 
   speechRecognizer.addEventListener("result", event => {
-    const transcript = Array.from(event.results)
-      .map(result => result[0].transcript)
-      .join(" ");
-    const matchedWords = matchTranscriptToPassage(transcript);
-    updateReadingProgress(matchedWords);
+    for (let index = event.resultIndex; index < event.results.length; index += 1) {
+      const result = event.results[index];
+      updateReadingFromTranscript(result[0].transcript, result.isFinal);
+    }
   });
 
   speechRecognizer.addEventListener("error", event => {
@@ -586,6 +662,11 @@ function percentile(values, amount) {
   return sorted[lower] * (1 - weight) + sorted[upper] * weight;
 }
 
+function averagePitchHz(pitches) {
+  const cleanPitches = pitches.filter(pitch => pitch >= 70 && pitch <= 450);
+  return cleanPitches.length ? percentile(cleanPitches, 0.5) : 0;
+}
+
 function rmsToDb(rms) {
   return 20 * Math.log10(Math.max(rms, 0.00001));
 }
@@ -676,6 +757,267 @@ function clearQualityColors() {
   scoreRing.style.background = "conic-gradient(var(--accent) 0deg, #dcece9 0deg)";
 }
 
+function setMetricDetailEmpty(message = "Record a take, then open a metric to see the shape behind the score.") {
+  latestAnalysisResult = null;
+  metricDetailButtons.forEach(button => {
+    button.classList.remove("active");
+  });
+
+  if (!metricDetailPanel) return;
+  metricDetailPanel.innerHTML = `<div class="metric-detail-empty">${message}</div>`;
+}
+
+function markerStyle(percent) {
+  return `--marker-position: ${clamp(percent, 0, 100)}%;`;
+}
+
+function barStyle(percent) {
+  return `--bar-fill: ${clamp(percent, 0, 100)}%;`;
+}
+
+function formatValue(value, suffix = "", digits = 1) {
+  return Number.isFinite(value) ? `${value.toFixed(digits)}${suffix}` : "--";
+}
+
+function describePitchZone(pitchHz) {
+  if (!pitchHz) {
+    return {
+      label: "Pitch unclear",
+      note: "The app needs a steadier voice trace before it can place the pitch."
+    };
+  }
+
+  if (pitchHz < 145) {
+    return {
+      label: "Lower pitch area",
+      note: "Often read as a lower speaking pitch, but pitch alone does not define the voice."
+    };
+  }
+
+  if (pitchHz <= 185) {
+    return {
+      label: "Overlap area",
+      note: "This sits in the shared middle where many voices can sound different for reasons beyond pitch."
+    };
+  }
+
+  return {
+    label: "Higher pitch area",
+    note: "Often read as a higher speaking pitch, but resonance and delivery matter too."
+  };
+}
+
+function renderPitchDetail(result) {
+  const pitchHz = result.pitchMedianHz || 0;
+  const voiceZone = linearScore(pitchHz, 85, 255);
+  const rangeFill = linearScore(result.pitchRange, 0, 12);
+  const pitchZone = describePitchZone(pitchHz);
+
+  return `
+    <div class="detail-header">
+      <h3>Pitch detail</h3>
+      <span>${pitchHz ? Math.round(pitchHz) : "--"} Hz average</span>
+    </div>
+    <div class="voice-continuum pitch-zone-continuum" style="${markerStyle(voiceZone)}">
+      <span>Lower</span>
+      <span>Overlap</span>
+      <span>Higher</span>
+      <i></i>
+    </div>
+    <div class="pitch-zone-summary">
+      <strong>${pitchZone.label}</strong>
+      <span>${pitchZone.note}</span>
+    </div>
+    <div class="detail-bars">
+      <div class="detail-bar-row">
+        <div>
+          <strong>Melody range</strong>
+          <small>How much the voice moved up and down</small>
+        </div>
+        <div class="detail-bar" style="${barStyle(rangeFill)}"><span></span></div>
+        <b>${formatValue(result.pitchRange, " st")}</b>
+      </div>
+      <div class="detail-bar-row">
+        <div>
+          <strong>Typical pitch</strong>
+          <small>Rough middle of the spoken voice</small>
+        </div>
+        <div class="detail-bar" style="${barStyle(voiceZone)}"><span></span></div>
+        <b>${pitchHz ? Math.round(pitchHz) : "--"} Hz</b>
+      </div>
+    </div>
+  `;
+}
+
+function renderVolumeDetail(result) {
+  return `
+    <div class="detail-header">
+      <h3>Volume detail</h3>
+      <span>${formatValue(result.energySd, " dB")} contrast</span>
+    </div>
+    <div class="detail-bars">
+      <div class="detail-bar-row">
+        <div>
+          <strong>Volume contrast</strong>
+          <small>Difference between quieter and stronger moments</small>
+        </div>
+        <div class="detail-bar warm" style="${barStyle(linearScore(result.energySd, 0, 6))}"><span></span></div>
+        <b>${formatValue(result.energySd, " dB")}</b>
+      </div>
+      <div class="detail-bar-row">
+        <div>
+          <strong>Full loudness range</strong>
+          <small>Quiet-to-loud spread across the take</small>
+        </div>
+        <div class="detail-bar warm" style="${barStyle(linearScore(result.energyRange, 0, 18))}"><span></span></div>
+        <b>${formatValue(result.energyRange, " dB")}</b>
+      </div>
+    </div>
+  `;
+}
+
+function renderTempoDetail(result) {
+  const speechPercent = result.speechRatio * 100;
+
+  return `
+    <div class="detail-header">
+      <h3>Tempo detail</h3>
+      <span>${Math.round(speechPercent)}% speaking</span>
+    </div>
+    <div class="speech-balance" style="${barStyle(speechPercent)}">
+      <span>Pause</span>
+      <span>Speech</span>
+      <i></i>
+    </div>
+    <div class="detail-bars">
+      <div class="detail-bar-row">
+        <div>
+          <strong>Speech balance</strong>
+          <small>How much of the take contained voice</small>
+        </div>
+        <div class="detail-bar blue" style="${barStyle(speechPercent)}"><span></span></div>
+        <b>${Math.round(speechPercent)}%</b>
+      </div>
+      <div class="detail-bar-row">
+        <div>
+          <strong>Average phrase length</strong>
+          <small>Short phrases can feel lively; long ones need clear shape</small>
+        </div>
+        <div class="detail-bar blue" style="${barStyle(linearScore(result.averageSpeechRun, 0, 8))}"><span></span></div>
+        <b>${formatValue(result.averageSpeechRun, " sec")}</b>
+      </div>
+    </div>
+  `;
+}
+
+function renderPauseDetail(result) {
+  return `
+    <div class="detail-header">
+      <h3>Pause detail</h3>
+      <span>${result.strategicPauses} useful pauses</span>
+    </div>
+    <div class="detail-bars">
+      <div class="detail-bar-row">
+        <div>
+          <strong>Pause rhythm</strong>
+          <small>Useful pauses per minute</small>
+        </div>
+        <div class="detail-bar green" style="${barStyle(linearScore(result.pausesPerMinute, 0, 14))}"><span></span></div>
+        <b>${formatValue(result.pausesPerMinute, "/min")}</b>
+      </div>
+      <div class="detail-bar-row">
+        <div>
+          <strong>Pause score</strong>
+          <small>Best when pauses are present but not constant</small>
+        </div>
+        <div class="detail-bar green" style="${barStyle(result.pauseScore)}"><span></span></div>
+        <b>${Math.round(result.pauseScore)}</b>
+      </div>
+    </div>
+  `;
+}
+
+function renderEmphasisDetail(result) {
+  return `
+    <div class="detail-header">
+      <h3>Emphasis detail</h3>
+      <span>${result.emphasisPeaks} peaks</span>
+    </div>
+    <div class="detail-bars">
+      <div class="detail-bar-row">
+        <div>
+          <strong>Emphasis peaks</strong>
+          <small>Moments that stood out in volume or movement</small>
+        </div>
+        <div class="detail-bar warm" style="${barStyle(linearScore(result.emphasisPeaksPerMinute, 0, 22))}"><span></span></div>
+        <b>${formatValue(result.emphasisPeaksPerMinute, "/min")}</b>
+      </div>
+      <div class="detail-bar-row">
+        <div>
+          <strong>Emphasis score</strong>
+          <small>Best when key words pop out clearly</small>
+        </div>
+        <div class="detail-bar warm" style="${barStyle(result.emphasisScore)}"><span></span></div>
+        <b>${Math.round(result.emphasisScore)}</b>
+      </div>
+    </div>
+  `;
+}
+
+function renderClarityDetail(result) {
+  const tracePercent = result.pitchTrackingRatio * 100;
+
+  return `
+    <div class="detail-header">
+      <h3>Clarity detail</h3>
+      <span>${Math.round(tracePercent)}% voice trace</span>
+    </div>
+    <div class="detail-bars">
+      <div class="detail-bar-row">
+        <div>
+          <strong>Voice trace</strong>
+          <small>How often the app could follow a stable voice signal</small>
+        </div>
+        <div class="detail-bar blue" style="${barStyle(tracePercent)}"><span></span></div>
+        <b>${Math.round(tracePercent)}%</b>
+      </div>
+      <div class="detail-bar-row">
+        <div>
+          <strong>Clarity score</strong>
+          <small>A signal-quality proxy, not a pronunciation test</small>
+        </div>
+        <div class="detail-bar blue" style="${barStyle(result.clarityScore)}"><span></span></div>
+        <b>${Math.round(result.clarityScore)}</b>
+      </div>
+    </div>
+  `;
+}
+
+function renderMetricDetail(metric = activeDetailMetric) {
+  activeDetailMetric = metric;
+  metricDetailButtons.forEach(button => {
+    button.classList.toggle("active", button.dataset.detailMetric === metric);
+  });
+
+  if (!metricDetailPanel) return;
+
+  if (!latestAnalysisResult) {
+    metricDetailPanel.innerHTML = `<div class="metric-detail-empty">Record a take, then open a metric to see the shape behind the score.</div>`;
+    return;
+  }
+
+  const renderers = {
+    pitch: renderPitchDetail,
+    volume: renderVolumeDetail,
+    tempo: renderTempoDetail,
+    pauses: renderPauseDetail,
+    emphasis: renderEmphasisDetail,
+    clarity: renderClarityDetail
+  };
+
+  metricDetailPanel.innerHTML = renderers[metric]?.(latestAnalysisResult) || renderPitchDetail(latestAnalysisResult);
+}
+
 function describeColourScore(score) {
   if (score < 35) return `Low: ${Math.round(score)}%`;
   if (score < 65) return `Some: ${Math.round(score)}%`;
@@ -725,6 +1067,7 @@ function showNoSpeechDetected() {
   emphasisMetric.textContent = "No speech detected";
   clarityMetric.textContent = "No speech detected";
   resetVocalColour("No Vocal Colour score yet. I need enough audible speech first.");
+  setMetricDetailEmpty("No detailed charts yet. I need enough audible speech first.");
   setRecordingNotice("I did not hear enough speech to score this take.", "warning");
   feedbackText.textContent = "This take did not contain enough audible speech. Try again with the microphone close enough and speak for at least 5 seconds.";
 }
@@ -1007,7 +1350,7 @@ function getMicrophoneIssue() {
   const isHttps = window.location.protocol === "https:";
 
   if (!isHttps && !isLocalHost) {
-    return "Recording needs the local web link. Open http://127.0.0.1:5173/index.html instead of the file version.";
+    return "Safari cannot record from the file version. Start the local web server and open http://127.0.0.1:5173/index.html.";
   }
 
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -1289,8 +1632,8 @@ async function analyzeWithPraat(recordingBlob) {
     applyPraatAnalysis(result, { finalTechnical: true });
   } catch (error) {
     setRecordingNotice(
-      `Browser analysis shown. Local Praat backend unavailable: ${error.message}`,
-      "warning"
+      "Browser analysis complete. Optional Praat check is off; start the local Praat backend only if you want the extra technical check.",
+      "success"
     );
   }
 }
@@ -1381,7 +1724,7 @@ async function analyzeLiveWithPraat() {
     }
   } catch (error) {
     if (isRecordingActive()) {
-      setRecordingNotice("Recording. Live Praat analysis is not available, so browser feedback is shown.", "warning");
+      setRecordingNotice("Recording. Browser feedback is shown; the optional Praat helper is off.", "active");
     }
   } finally {
     isLivePraatAnalyzing = false;
@@ -1529,6 +1872,7 @@ function buildFinalAudienceResult(fallbackResult) {
     pacingScore: averageResultValue(usableResults, "pacingScore", fallbackResult),
     pitchSd: averageResultValue(usableResults, "pitchSd", fallbackResult),
     pitchRange: averageResultValue(usableResults, "pitchRange", fallbackResult),
+    pitchMedianHz: averageResultValue(usableResults, "pitchMedianHz", fallbackResult),
     energySd: averageResultValue(usableResults, "energySd", fallbackResult),
     energyRange: averageResultValue(usableResults, "energyRange", fallbackResult),
     speechRatio: averageResultValue(usableResults, "speechRatio", fallbackResult),
@@ -1567,6 +1911,7 @@ function analyzeProsody(rmsValues, pitches, duration) {
   );
 
   const semitoneValues = cleanPitchReadings(pitches);
+  const pitchMedianHz = averagePitchHz(pitches);
   const pitchSd = standardDeviation(semitoneValues);
   const pitchRange = percentile(semitoneValues, 0.9) - percentile(semitoneValues, 0.1);
   const pitchMoves = semitoneValues.reduce((count, value, index, values) => {
@@ -1659,6 +2004,7 @@ function analyzeProsody(rmsValues, pitches, duration) {
     pacingScore,
     pitchSd,
     pitchRange,
+    pitchMedianHz,
     energySd,
     energyRange,
     speechRatio,
@@ -1790,6 +2136,7 @@ function analyzeRecording() {
     emphasisMetric.textContent = "Need 5 seconds";
     clarityMetric.textContent = "Need 5 seconds";
     resetVocalColour("Vocal Colour also needs at least 5 seconds of speech.");
+    setMetricDetailEmpty("Detailed charts need at least 5 seconds of speech.");
     setRecordingNotice("That take was under 5 seconds, so I did not score voice variety yet.", "warning");
     feedbackText.textContent = "This take was too short to judge voice variety fairly. Try speaking for at least 5 seconds so the audience can hear a real pattern.";
     return;
@@ -1808,6 +2155,8 @@ function analyzeRecording() {
   }
 
   const result = buildFinalAudienceResult(wholeResult);
+  latestAnalysisResult = result;
+  renderMetricDetail(activeDetailMetric);
 
   scoreValue.textContent = result.score;
   setScoreVisual(result.score);
@@ -1908,6 +2257,7 @@ async function startRecording() {
   speakingFrames = 0;
   quietFrames = 0;
   liveFrame = 0;
+  setMetricDetailEmpty("Recording now. The detailed charts will appear after this take.");
   resetAudienceTracking();
   if (audioUrl) URL.revokeObjectURL(audioUrl);
   audioUrl = "";
@@ -2042,6 +2392,9 @@ audienceTypeInputs.forEach(input => {
   input.addEventListener("change", () => {
     if (input.checked) setAudienceType(input.value);
   });
+});
+metricDetailButtons.forEach(button => {
+  button.addEventListener("click", () => renderMetricDetail(button.dataset.detailMetric));
 });
 recordButton.addEventListener("click", toggleRecording);
 playButton.addEventListener("click", playRecording);

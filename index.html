@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Voice Variety Coach</title>
-    <link rel="stylesheet" href="styles.css?v=microphone-input" />
+    <link rel="stylesheet" href="styles.css?v=metric-details-safari" />
   </head>
   <body>
     <main class="app-shell">
@@ -275,30 +275,52 @@
 
         <div class="metrics">
           <article>
-            <span>Pitch variation</span>
+            <div class="metric-heading">
+              <span>Pitch variation</span>
+              <button class="metric-detail-button" type="button" data-detail-metric="pitch" aria-label="Show pitch details">Details</button>
+            </div>
             <strong id="pitchMetric">--</strong>
           </article>
           <article>
-            <span>Volume variation</span>
+            <div class="metric-heading">
+              <span>Volume variation</span>
+              <button class="metric-detail-button" type="button" data-detail-metric="volume" aria-label="Show volume details">Details</button>
+            </div>
             <strong id="energyMetric">--</strong>
           </article>
           <article>
-            <span>Tempo</span>
+            <div class="metric-heading">
+              <span>Tempo</span>
+              <button class="metric-detail-button" type="button" data-detail-metric="tempo" aria-label="Show tempo details">Details</button>
+            </div>
             <strong id="tempoMetric">--</strong>
           </article>
           <article>
-            <span>Pauses</span>
+            <div class="metric-heading">
+              <span>Pauses</span>
+              <button class="metric-detail-button" type="button" data-detail-metric="pauses" aria-label="Show pause details">Details</button>
+            </div>
             <strong id="pauseMetric">--</strong>
           </article>
           <article>
-            <span>Emphasis</span>
+            <div class="metric-heading">
+              <span>Emphasis</span>
+              <button class="metric-detail-button" type="button" data-detail-metric="emphasis" aria-label="Show emphasis details">Details</button>
+            </div>
             <strong id="emphasisMetric">--</strong>
           </article>
           <article>
-            <span>Articulation / clarity</span>
+            <div class="metric-heading">
+              <span>Articulation / clarity</span>
+              <button class="metric-detail-button" type="button" data-detail-metric="clarity" aria-label="Show clarity details">Details</button>
+            </div>
             <strong id="clarityMetric">--</strong>
           </article>
         </div>
+
+        <section class="metric-detail-panel" id="metricDetailPanel" aria-live="polite">
+          <div class="metric-detail-empty">Record a take, then open a metric to see the shape behind the score.</div>
+        </section>
 
         <section class="vocal-colour-panel" aria-labelledby="vocal-colour-title">
           <div class="vocal-colour-header">
@@ -329,6 +351,6 @@
       </aside>
     </main>
 
-    <script src="app.js?v=microphone-input"></script>
+    <script src="app.js?v=metric-details-safari"></script>
   </body>
 </html>

@@ -2455,7 +2455,7 @@ canvas {
 .metrics {
   display: grid;
   gap: 10px;
-  margin-bottom: 18px;
+  margin-bottom: 12px;
 }
 
 .metrics article,
@@ -2512,6 +2512,204 @@ canvas {
   display: block;
   margin-top: 4px;
   font-size: 1.1rem;
+}
+
+.metric-heading {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.metric-detail-button {
+  flex: 0 0 auto;
+  min-height: 28px;
+  border: 1px solid rgba(13, 124, 128, 0.2);
+  border-radius: 999px;
+  padding: 0 9px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--accent-strong);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.metric-detail-button:hover,
+.metric-detail-button:focus-visible,
+.metric-detail-button.active {
+  border-color: var(--accent);
+  outline: none;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(13, 124, 128, 0.13);
+}
+
+.metric-detail-panel {
+  min-height: 194px;
+  margin-bottom: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+  background: linear-gradient(180deg, #fbfcfd, #f4f8f8);
+}
+
+.metric-detail-empty {
+  min-height: 164px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 750;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.detail-header {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.detail-header h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.detail-header span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.voice-continuum,
+.speech-balance {
+  position: relative;
+  height: 50px;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  padding: 0 10px 8px;
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, #2457a6, #3f9b73 48%, #d8674d);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.pitch-zone-continuum {
+  display: grid;
+  grid-template-columns: 1fr 0.82fr 1fr;
+  align-items: end;
+  background:
+    linear-gradient(90deg, #2457a6 0 35%, #3f9b73 35% 58%, #d8674d 58% 100%);
+}
+
+.pitch-zone-continuum span {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+}
+
+.speech-balance {
+  background: linear-gradient(90deg, #7d8794 0 var(--bar-fill), #0d7c80 var(--bar-fill) 100%);
+}
+
+.voice-continuum i,
+.speech-balance i {
+  position: absolute;
+  left: var(--marker-position, var(--bar-fill, 50%));
+  top: 7px;
+  width: 12px;
+  height: 28px;
+  border: 3px solid #ffffff;
+  border-radius: 999px;
+  background: rgba(17, 24, 39, 0.18);
+  box-shadow: 0 3px 10px rgba(17, 24, 39, 0.2);
+  transform: translateX(-50%);
+}
+
+.pitch-zone-summary {
+  display: grid;
+  gap: 3px;
+  margin: -4px 0 13px;
+  border: 1px solid rgba(13, 124, 128, 0.16);
+  border-radius: 8px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.pitch-zone-summary strong {
+  font-size: 0.9rem;
+}
+
+.pitch-zone-summary span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 720;
+  line-height: 1.35;
+}
+
+.detail-bars {
+  display: grid;
+  gap: 12px;
+}
+
+.detail-bar-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(92px, 0.85fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.detail-bar-row strong {
+  display: block;
+  font-size: 0.86rem;
+}
+
+.detail-bar-row small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.detail-bar-row b {
+  min-width: 50px;
+  font-size: 0.82rem;
+  text-align: right;
+}
+
+.detail-bar {
+  height: 12px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #dfe8eb;
+}
+
+.detail-bar span {
+  display: block;
+  width: var(--bar-fill);
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2457a6, var(--accent));
+}
+
+.detail-bar.warm span {
+  background: linear-gradient(90deg, #e6b84f, #d8674d);
+}
+
+.detail-bar.green span {
+  background: linear-gradient(90deg, #7aa874, #3f9b73);
+}
+
+.detail-bar.blue span {
+  background: linear-gradient(90deg, #2457a6, #0d7c80);
 }
 
 .vocal-colour-panel {

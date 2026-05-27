@@ -19,6 +19,8 @@ Then open:
 http://localhost:5173
 ```
 
+Safari will not record reliably if you open `index.html` directly as a file. Use the `localhost` link above instead.
+
 ## Use It
 
 1. Click **Start Recording**.
