@@ -2615,6 +2615,195 @@ canvas {
   text-align: center;
 }
 
+.pitch-reference-map {
+  position: relative;
+  display: grid;
+  gap: 14px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(13, 124, 128, 0.16);
+  border-radius: 8px;
+  padding: 14px;
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(239, 248, 246, 0.72)),
+    radial-gradient(circle at 86% 20%, rgba(236, 113, 161, 0.16), transparent 32%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55);
+}
+
+.pitch-map-title,
+.pitch-map-values,
+.pitch-spectrum-labels {
+  position: relative;
+  z-index: 2;
+}
+
+.pitch-map-title {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pitch-map-title strong {
+  color: #203653;
+  font-size: 0.92rem;
+  line-height: 1.15;
+}
+
+.pitch-map-title span {
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: rgba(236, 113, 161, 0.14);
+  color: #a23f73;
+  font-size: 0.72rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.pitch-spectrum {
+  position: relative;
+  z-index: 1;
+  height: 78px;
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, rgba(35, 58, 103, 0.09), rgba(13, 124, 128, 0.08), rgba(236, 113, 161, 0.11)),
+    repeating-linear-gradient(90deg, transparent 0 13.5%, rgba(35, 58, 103, 0.08) 13.5% 13.8%, transparent 13.8% 27%);
+  box-shadow: inset 0 0 0 1px rgba(35, 58, 103, 0.08);
+}
+
+.pitch-spectrum::before {
+  content: "Lower";
+  position: absolute;
+  left: 10px;
+  bottom: 8px;
+  color: rgba(32, 54, 83, 0.56);
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.pitch-spectrum::after {
+  content: "Higher";
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  color: rgba(32, 54, 83, 0.56);
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.pitch-spectrum-band,
+.pitch-spectrum-range,
+.pitch-spectrum-median {
+  position: absolute;
+  transform: translateY(-50%);
+}
+
+.pitch-spectrum-band {
+  left: var(--band-left);
+  right: calc(100% - var(--band-right));
+  top: 28px;
+  height: 18px;
+  border-radius: 999px;
+  opacity: 0.76;
+}
+
+.pitch-spectrum-band.male {
+  background: rgba(51, 101, 183, 0.28);
+}
+
+.pitch-spectrum-band.shared {
+  top: 39px;
+  background: rgba(19, 137, 119, 0.32);
+}
+
+.pitch-spectrum-band.female {
+  top: 50px;
+  background: rgba(236, 113, 161, 0.34);
+}
+
+.pitch-spectrum-range {
+  left: var(--pitch-range-left, 28%);
+  right: calc(100% - var(--pitch-range-right, 58%));
+  top: 39px;
+  height: 12px;
+  border-radius: 999px;
+  background: #203653;
+  box-shadow: 0 8px 20px rgba(32, 54, 83, 0.22);
+}
+
+.pitch-spectrum-range::before,
+.pitch-spectrum-range::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  border: 3px solid #ffffff;
+  border-radius: 999px;
+  background: #ec71a1;
+  transform: translateY(-50%);
+  box-shadow: 0 4px 12px rgba(32, 54, 83, 0.18);
+}
+
+.pitch-spectrum-range::before {
+  left: -7px;
+}
+
+.pitch-spectrum-range::after {
+  right: -7px;
+}
+
+.pitch-spectrum-median {
+  left: var(--pitch-median-position, 44%);
+  top: 39px;
+  width: 4px;
+  height: 44px;
+  border-radius: 999px;
+  background: #ec71a1;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.82);
+}
+
+.pitch-spectrum-labels {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.pitch-spectrum-labels div {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.pitch-spectrum-labels div:nth-child(2) {
+  text-align: center;
+}
+
+.pitch-spectrum-labels div:nth-child(3) {
+  text-align: right;
+}
+
+.pitch-spectrum-labels strong {
+  color: #203653;
+  font-size: 0.72rem;
+  line-height: 1.12;
+}
+
+.pitch-spectrum-labels span,
+.pitch-map-values span {
+  color: rgba(32, 54, 83, 0.58);
+  font-size: 0.68rem;
+  font-weight: 850;
+}
+
+.pitch-map-values {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  border-top: 1px solid rgba(32, 54, 83, 0.09);
+  padding-top: 10px;
+}
+
 .speech-balance {
   background: linear-gradient(90deg, #7d8794 0 var(--bar-fill), #0d7c80 var(--bar-fill) 100%);
 }
@@ -2986,8 +3175,15 @@ canvas {
   }
 
   body.is-recording .controls {
-    top: 6px;
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 8px);
+    left: 10px;
+    right: 10px;
     border-color: rgba(216, 103, 77, 0.28);
+  }
+
+  body.is-recording .controls .secondary-button {
+    display: none;
   }
 
   .primary-button,

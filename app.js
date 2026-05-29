@@ -142,7 +142,7 @@ let speechRecognizer;
 let shouldTrackSpeech = false;
 let timedScrollInterval;
 let currentMode = "story";
-let currentScrollMode = "voice";
+let currentScrollMode = "auto";
 let currentAudienceType = "duo";
 let selectedMicrophoneId = "";
 let liveAudioProcessor;
@@ -715,6 +715,24 @@ function cleanPitchReadings(pitches) {
   return semitones.filter(value => value >= low && value <= high);
 }
 
+function cleanPitchHzReadings(pitches) {
+  const inHumanRange = pitches.filter(pitch => pitch >= 70 && pitch <= 450);
+  if (inHumanRange.length < 4) return [];
+
+  const basePitch = percentile(inHumanRange, 0.5);
+  const pitchPoints = inHumanRange.map(pitch => ({
+    hz: pitch,
+    semitone: 12 * Math.log2(pitch / basePitch)
+  }));
+  const semitones = pitchPoints.map(point => point.semitone);
+  const low = percentile(semitones, 0.05);
+  const high = percentile(semitones, 0.95);
+
+  return pitchPoints
+    .filter(point => point.semitone >= low && point.semitone <= high)
+    .map(point => point.hz);
+}
+
 function describeMetric(score, lowLabel, midLabel, highLabel, detail) {
   const label = score < 45 ? lowLabel : score < 72 ? midLabel : highLabel;
   return detail ? `${label}: ${detail}` : label;
@@ -813,22 +831,87 @@ function describePitchZone(pitchHz) {
   };
 }
 
+function pitchHzToSpectrumPosition(hz) {
+  return linearScore(hz, 80, 265);
+}
+
+function getPitchRangeHz(result) {
+  const medianHz = result.pitchMedianHz || 0;
+  let lowHz = result.pitchLowHz || 0;
+  let highHz = result.pitchHighHz || 0;
+
+  if ((!lowHz || !highHz) && medianHz && Number.isFinite(result.pitchRange)) {
+    const halfRange = result.pitchRange / 2;
+    lowHz = medianHz / Math.pow(2, halfRange / 12);
+    highHz = medianHz * Math.pow(2, halfRange / 12);
+  }
+
+  if (!medianHz || !lowHz || !highHz || highHz <= lowHz) {
+    return null;
+  }
+
+  const left = clamp(pitchHzToSpectrumPosition(lowHz), 4, 96);
+  const right = clamp(pitchHzToSpectrumPosition(highHz), 4, 96);
+  const medianPosition = clamp(pitchHzToSpectrumPosition(medianHz), 6, 94);
+
+  return {
+    low: Math.round(lowHz),
+    median: Math.round(medianHz),
+    high: Math.round(highHz),
+    left,
+    right,
+    medianPosition
+  };
+}
+
 function renderPitchDetail(result) {
   const pitchHz = result.pitchMedianHz || 0;
   const voiceZone = linearScore(pitchHz, 85, 255);
   const rangeFill = linearScore(result.pitchRange, 0, 12);
   const pitchZone = describePitchZone(pitchHz);
+  const rangeHz = getPitchRangeHz(result);
+  const pitchMapStyle = rangeHz
+    ? `--pitch-range-left: ${rangeHz.left}%; --pitch-range-right: ${rangeHz.right}%; --pitch-median-position: ${rangeHz.medianPosition}%;`
+    : "";
 
   return `
     <div class="detail-header">
       <h3>Pitch detail</h3>
       <span>${pitchHz ? Math.round(pitchHz) : "--"} Hz average</span>
     </div>
-    <div class="voice-continuum pitch-zone-continuum" style="${markerStyle(voiceZone)}">
-      <span>Lower</span>
-      <span>Overlap</span>
-      <span>Higher</span>
-      <i></i>
+    <div class="pitch-reference-map" style="${pitchMapStyle}">
+      <div class="pitch-map-title">
+        <strong>Voice pitch framework</strong>
+        <span>${rangeHz ? `${rangeHz.low}-${rangeHz.high} Hz` : "Range unclear"}</span>
+      </div>
+      <div class="pitch-spectrum" aria-hidden="true">
+        <span class="pitch-spectrum-band male" style="--band-left: ${pitchHzToSpectrumPosition(85)}%; --band-right: ${pitchHzToSpectrumPosition(180)}%;"></span>
+        <span class="pitch-spectrum-band shared" style="--band-left: ${pitchHzToSpectrumPosition(145)}%; --band-right: ${pitchHzToSpectrumPosition(185)}%;"></span>
+        <span class="pitch-spectrum-band female" style="--band-left: ${pitchHzToSpectrumPosition(165)}%; --band-right: ${pitchHzToSpectrumPosition(255)}%;"></span>
+        ${rangeHz ? `
+          <span class="pitch-spectrum-range"></span>
+          <span class="pitch-spectrum-median"></span>
+        ` : ""}
+      </div>
+      <div class="pitch-spectrum-labels">
+        <div>
+          <strong>Male range</strong>
+          <span>85-180 Hz</span>
+        </div>
+        <div>
+          <strong>Androgynous overlap</strong>
+          <span>145-185 Hz</span>
+        </div>
+        <div>
+          <strong>Female range</strong>
+          <span>165-255 Hz</span>
+        </div>
+      </div>
+      <div class="pitch-map-values">
+        <span>Low ${rangeHz ? `${rangeHz.low} Hz` : "--"}</span>
+        <span>Average ${rangeHz ? `${rangeHz.median} Hz` : "--"}</span>
+        <span>High ${rangeHz ? `${rangeHz.high} Hz` : "--"}</span>
+      </div>
     </div>
     <div class="pitch-zone-summary">
       <strong>${pitchZone.label}</strong>
@@ -1884,6 +1967,8 @@ function buildFinalAudienceResult(fallbackResult) {
     pitchSd: averageResultValue(usableResults, "pitchSd", fallbackResult),
     pitchRange: averageResultValue(usableResults, "pitchRange", fallbackResult),
     pitchMedianHz: averageResultValue(usableResults, "pitchMedianHz", fallbackResult),
+    pitchLowHz: averageResultValue(usableResults, "pitchLowHz", fallbackResult),
+    pitchHighHz: averageResultValue(usableResults, "pitchHighHz", fallbackResult),
     energySd: averageResultValue(usableResults, "energySd", fallbackResult),
     energyRange: averageResultValue(usableResults, "energyRange", fallbackResult),
     speechRatio: averageResultValue(usableResults, "speechRatio", fallbackResult),
@@ -1922,7 +2007,10 @@ function analyzeProsody(rmsValues, pitches, duration) {
   );
 
   const semitoneValues = cleanPitchReadings(pitches);
+  const pitchHzValues = cleanPitchHzReadings(pitches);
   const pitchMedianHz = averagePitchHz(pitches);
+  const pitchLowHz = pitchHzValues.length ? percentile(pitchHzValues, 0.1) : 0;
+  const pitchHighHz = pitchHzValues.length ? percentile(pitchHzValues, 0.9) : 0;
   const pitchSd = standardDeviation(semitoneValues);
   const pitchRange = percentile(semitoneValues, 0.9) - percentile(semitoneValues, 0.1);
   const pitchMoves = semitoneValues.reduce((count, value, index, values) => {
@@ -2016,6 +2104,8 @@ function analyzeProsody(rmsValues, pitches, duration) {
     pitchSd,
     pitchRange,
     pitchMedianHz,
+    pitchLowHz,
+    pitchHighHz,
     energySd,
     energyRange,
     speechRatio,
@@ -2418,7 +2508,7 @@ if (navigator.mediaDevices?.addEventListener) {
 }
 
 setReadingSize("large");
-setScrollMode("voice");
+setScrollMode("auto");
 setAudienceType("duo");
 setMode("story");
 drawIdleWave();
