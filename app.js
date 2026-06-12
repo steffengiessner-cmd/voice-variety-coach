@@ -2400,6 +2400,32 @@ async function startRecording() {
   updateListeningPeriod(0);
 }
 
+async function cleanupFailedRecordingStart() {
+  clearInterval(timerInterval);
+  cancelAnimationFrame(animationFrame);
+  stopLivePraatAnalysis();
+  stopReadingTracker();
+
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop());
+  }
+
+  if (audioContext && audioContext.state !== "closed") {
+    try {
+      await audioContext.close();
+    } catch (error) {
+      // The context may already be closing after a failed recorder setup.
+    }
+  }
+
+  stream = null;
+  audioContext = null;
+  analyser = null;
+  source = null;
+  mediaRecorder = null;
+  resetAudience();
+}
+
 function finishRecording() {
   clearInterval(timerInterval);
   cancelAnimationFrame(animationFrame);
@@ -2449,9 +2475,7 @@ async function toggleRecording() {
     microphoneSelect.disabled = false;
     setRecordingNotice(message, "warning");
     feedbackText.textContent = message;
-    stopLivePraatAnalysis();
-    stopReadingTracker();
-    updateAudience(18);
+    await cleanupFailedRecordingStart();
   }
 }
 
