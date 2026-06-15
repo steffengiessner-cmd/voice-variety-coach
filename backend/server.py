@@ -78,20 +78,23 @@ def analyze_with_praat(path: Path) -> dict:
     db_top = percentile(db_values, 0.95) or db_floor
     speech_threshold = db_floor + (db_top - db_floor) * 0.25
     speech_flags = [value > speech_threshold for value in db_values]
+    speech_db_values = [
+        value for value, is_speech in zip(db_values, speech_flags) if is_speech
+    ]
     frame_duration = duration / max(1, len(speech_flags))
     pause_durations = runs(speech_flags, False, frame_duration)
     strategic_pauses = [pause for pause in pause_durations if 0.35 <= pause <= 2.4]
     long_pauses = [pause for pause in pause_durations if pause > 2.4]
 
-    db_mean = mean(db_values) if db_values else None
-    db_sd = pstdev(db_values) if len(db_values) > 1 else None
+    db_mean = mean(speech_db_values) if speech_db_values else None
+    db_sd = pstdev(speech_db_values) if len(speech_db_values) > 1 else None
     f0_mean = mean(f0_values) if f0_values else None
     f0_sd = pstdev(f0_values) if len(f0_values) > 1 else None
     f0_p10 = percentile(f0_values, 0.1)
     f0_p90 = percentile(f0_values, 0.9)
     f0_range = (f0_p90 - f0_p10) if f0_p10 is not None and f0_p90 is not None else None
-    db_p05 = percentile(db_values, 0.05)
-    db_p95 = percentile(db_values, 0.95)
+    db_p05 = percentile(speech_db_values, 0.05)
+    db_p95 = percentile(speech_db_values, 0.95)
     db_range = (db_p95 - db_p05) if db_p05 is not None and db_p95 is not None else None
     speech_ratio = sum(speech_flags) / max(1, len(speech_flags))
 

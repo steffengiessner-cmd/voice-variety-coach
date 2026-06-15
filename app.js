@@ -1394,46 +1394,70 @@ function getVolumePracticeAnalysis() {
   const position = linearScore(medianDb, -46, -10);
 
   let setting = "conversational level";
-  let score = 86;
   let summary = "Your recorded level sounds comfortable and conversational with this microphone setup.";
   let advice = "This is a useful everyday level. In a larger room, focus on clear breath support rather than simply becoming louder.";
 
   if (medianDb < -40) {
     setting = "very soft";
-    score = 58;
     summary = "Your recorded level was very soft, even for a nearby listener.";
     advice = "Keep the relaxed tone, but add a little more breath and firmness.";
   } else if (medianDb < -32) {
     setting = "quiet one-to-one";
-    score = 76;
     summary = "Your recorded level suits a quiet one-to-one conversation with this microphone setup.";
     advice = "For a team conversation, make the consonants a little clearer and support the sentence through to the end.";
   } else if (medianDb < -17) {
     setting = "conversation or small team";
   } else if (medianDb < -10 || clippingRatio <= 0.01) {
     setting = "strong conversational level";
-    score = 80;
     summary = "Your signal was strong, but that may reflect microphone distance or gain rather than audience-level projection.";
     advice = "Keep this level if it feels relaxed. Real audience projection should be judged in the room, not from microphone level alone.";
   } else {
     setting = "too close or too strong";
-    score = 60;
     summary = "The recording level was very strong and may be too close to the microphone.";
     advice = "Move slightly farther from the microphone or lower its input gain. Do not reduce healthy breath support.";
   }
 
-  return { medianDb, peakDb, clippingRatio, position, setting, score, summary, advice };
+  return { medianDb, peakDb, clippingRatio, position, setting, summary, advice };
 }
 
-function renderVolumePracticeFeedback() {
+function describePraatVolume(result) {
+  const meanDb = result?.volume?.meanDb;
+  const variationDb = result?.volume?.sdDb;
+  const rangeDb = result?.volume?.rangeDbP05P95;
+  if (![meanDb, variationDb, rangeDb].every(Number.isFinite)) return null;
+
+  const consistency = variationDb < 2
+    ? "very steady"
+    : variationDb < 4.5
+      ? "naturally varied"
+      : "strongly varied";
+  const note = variationDb < 2
+    ? "The sentence stayed at a consistent level."
+    : variationDb < 4.5
+      ? "The sentence had a natural amount of loudness movement."
+      : "The sentence changed considerably in loudness; check whether that was intentional.";
+
+  return { meanDb, variationDb, rangeDb, consistency, note };
+}
+
+function renderVolumePracticeFeedback(praatResult = null) {
   const analysis = getVolumePracticeAnalysis();
   if (!analysis) {
     resetPracticeFeedback("I could not hear enough of the sentence. Try again with the microphone nearby and speak the full line.");
     return false;
   }
 
+  const praat = describePraatVolume(praatResult);
+  practiceFeedbackPanel.classList.remove("quality-low", "quality-mid", "quality-high", "quality-neutral");
   practiceFeedbackPanel.innerHTML = `
-    ${renderPracticeResultHeader("Speaking volume", analysis.score, analysis.summary)}
+    <div class="practice-result-header no-score">
+      <div>
+        <span>${praat ? "Praat-assisted feedback" : "Browser measurement"}</span>
+        <h3>Speaking volume</h3>
+      </div>
+      <strong class="practice-result-label">${analysis.setting}</strong>
+    </div>
+    <p class="practice-result-summary">${analysis.summary}</p>
     <div class="volume-setting-scale" style="${markerStyle(analysis.position)}">
       <div><span>Quiet</span><strong>1-to-1</strong></div>
       <div><span>Clear</span><strong>Team</strong></div>
@@ -1445,10 +1469,28 @@ function renderVolumePracticeFeedback() {
       <article><span>Typical level</span><strong>${analysis.medianDb.toFixed(1)} dBFS</strong></article>
       <article><span>Strongest moment</span><strong>${analysis.peakDb.toFixed(1)} dBFS</strong></article>
     </div>
+    ${praat ? `
+      <div class="praat-volume-panel">
+        <div class="praat-volume-heading">
+          <strong>Praat acoustic check</strong>
+          <span>${praat.consistency}</span>
+        </div>
+        <div class="practice-stat-grid">
+          <article><span>Mean intensity</span><strong>${praat.meanDb.toFixed(1)} dB</strong></article>
+          <article><span>Variation</span><strong>${praat.variationDb.toFixed(1)} dB</strong></article>
+          <article><span>Working range</span><strong>${praat.rangeDb.toFixed(1)} dB</strong></article>
+        </div>
+        <p>${praat.note}</p>
+      </div>
+    ` : `
+      <div class="praat-volume-panel unavailable">
+        <strong>Praat check unavailable</strong>
+        <p>Start the local Praat helper to add a more stable acoustic measurement of intensity variation and range.</p>
+      </div>
+    `}
     <div class="practice-advice"><strong>How to use it</strong><p>${analysis.advice}</p></div>
-    <p class="practice-calibration-note">A microphone cannot reliably tell whether your voice would fill a room. This result checks recorded level and gives cautious guidance for your current distance and input gain.</p>
+    <p class="practice-calibration-note">Neither browser analysis nor Praat can determine true room loudness without a calibrated microphone. They measure the recorded signal, its consistency, and its range.</p>
   `;
-  setQuality(practiceFeedbackPanel, analysis.score);
   feedbackText.textContent = analysis.summary;
   return true;
 }
@@ -2015,7 +2057,8 @@ async function refreshMicrophoneInputs() {
 }
 
 function canUseLocalPraat() {
-  return ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
+  return window.location.protocol === "file:"
+    || ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
 }
 
 function getRecorderOptions() {
@@ -2224,6 +2267,29 @@ async function analyzeWithPraat(recordingBlob) {
   } catch (error) {
     setRecordingNotice(
       "Browser analysis complete. Optional Praat check is off; start the local Praat backend only if you want the extra technical check.",
+      "success"
+    );
+  }
+}
+
+async function analyzePracticeWithPraat(recordingBlob) {
+  if (currentPracticeSkill !== "volume" || !canUseLocalPraat()) return;
+
+  try {
+    setRecordingNotice("Browser feedback ready. Checking the take with local Praat...", "active");
+    const wavBlob = await convertRecordingToWav(recordingBlob);
+    const result = await sendWavToPraat(wavBlob);
+
+    if (!hasEnoughPraatSpeech(result)) {
+      setRecordingNotice("Praat did not find enough clear speech, so browser feedback is shown.", "warning");
+      return;
+    }
+
+    renderVolumePracticeFeedback(result);
+    setRecordingNotice("Praat-assisted volume feedback is ready.", "success");
+  } catch (error) {
+    setRecordingNotice(
+      "Browser volume feedback is ready. The optional local Praat helper is not running.",
       "success"
     );
   }
@@ -2854,6 +2920,7 @@ async function startRecording() {
   analyser.fftSize = 2048;
   source = audioContext.createMediaStreamSource(stream);
   source.connect(analyser);
+  resetLivePraatBuffers();
   if (currentMode !== "practice") startLivePraatAnalysis();
 
   chunks = [];
@@ -2969,7 +3036,11 @@ function finishRecording() {
   microphoneSelect.disabled = false;
   setRecordingNotice("Recording complete. Play it back or try another take.", "success");
   analyzeRecording();
-  if (currentMode !== "practice") analyzeWithPraat(blob);
+  if (currentMode === "practice") {
+    analyzePracticeWithPraat(blob);
+  } else {
+    analyzeWithPraat(blob);
+  }
 }
 
 async function toggleRecording() {
