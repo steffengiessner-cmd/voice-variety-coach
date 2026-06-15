@@ -82,7 +82,7 @@ const practiceTasks = {
   tempo: {
     title: "Fast setup, slow new idea",
     definition: "Tempo is the speed at which you deliver words and ideas.",
-    instruction: "Read the familiar first part quickly. Pause at the divider, then read the new and important second part slowly.",
+    instruction: "Read the familiar first part quickly. Pause at the divider, then read the new and important second part more slowly and deliberately. Keep it natural; do not read word by word.",
     knownText: "Most people know that an octopus has eight arms.",
     newText: "What is less known, and very important, is that it has three hearts and blue blood.",
     knownWords: 9,
@@ -1391,34 +1391,35 @@ function getVolumePracticeAnalysis() {
   const medianDb = percentile(speechDb, 0.5);
   const peakDb = percentile(speechDb, 0.95);
   const clippingRatio = samples.filter(value => value > 0.88).length / Math.max(1, samples.length);
-  const position = linearScore(medianDb, -44, -14);
+  const position = linearScore(medianDb, -46, -10);
 
-  let setting = "one-to-one conversation";
-  let score = 78;
-  let summary = "At this microphone distance, your level suits a calm one-to-one conversation.";
-  let advice = "For a team meeting, add a little more breath support and send the final word toward the farthest listener.";
+  let setting = "conversational level";
+  let score = 86;
+  let summary = "Your recorded level sounds comfortable and conversational with this microphone setup.";
+  let advice = "This is a useful everyday level. In a larger room, focus on clear breath support rather than simply becoming louder.";
 
-  if (medianDb < -38) {
-    setting = "very close or quiet conversation";
+  if (medianDb < -40) {
+    setting = "very soft";
     score = 58;
-    summary = "At this microphone distance, your voice was quite soft and may be hard to hear beyond one nearby listener.";
-    advice = "Keep the same relaxed tone, but speak slightly more firmly for a one-to-one conversation.";
-  } else if (medianDb < -31) {
-    setting = "one-to-one conversation";
-  } else if (medianDb < -24) {
-    setting = "small team meeting";
-    score = 88;
-    summary = "At this microphone distance, your level should carry well in a one-to-one conversation or small team meeting.";
-    advice = "This is a useful everyday level. For a large room, project with breath support rather than tightening your throat.";
+    summary = "Your recorded level was very soft, even for a nearby listener.";
+    advice = "Keep the relaxed tone, but add a little more breath and firmness.";
+  } else if (medianDb < -32) {
+    setting = "quiet one-to-one";
+    score = 76;
+    summary = "Your recorded level suits a quiet one-to-one conversation with this microphone setup.";
+    advice = "For a team conversation, make the consonants a little clearer and support the sentence through to the end.";
+  } else if (medianDb < -17) {
+    setting = "conversation or small team";
+  } else if (medianDb < -10 || clippingRatio <= 0.01) {
+    setting = "strong conversational level";
+    score = 80;
+    summary = "Your signal was strong, but that may reflect microphone distance or gain rather than audience-level projection.";
+    advice = "Keep this level if it feels relaxed. Real audience projection should be judged in the room, not from microphone level alone.";
   } else {
-    setting = "large room or audience";
-    score = clippingRatio > 0.02 ? 62 : 82;
-    summary = clippingRatio > 0.02
-      ? "Your voice was strongly projected, but the signal became too hot or too close to the microphone."
-      : "At this microphone distance, your level was strongly projected and better suited to a larger room or audience.";
-    advice = clippingRatio > 0.02
-      ? "Move slightly farther from the microphone or reduce the input level while keeping the same supported voice."
-      : "Keep the projection supported and relaxed; avoid turning it into a shout.";
+    setting = "too close or too strong";
+    score = 60;
+    summary = "The recording level was very strong and may be too close to the microphone.";
+    advice = "Move slightly farther from the microphone or lower its input gain. Do not reduce healthy breath support.";
   }
 
   return { medianDb, peakDb, clippingRatio, position, setting, score, summary, advice };
@@ -1436,7 +1437,7 @@ function renderVolumePracticeFeedback() {
     <div class="volume-setting-scale" style="${markerStyle(analysis.position)}">
       <div><span>Quiet</span><strong>1-to-1</strong></div>
       <div><span>Clear</span><strong>Team</strong></div>
-      <div><span>Projected</span><strong>Audience</strong></div>
+      <div><span>Strong</span><strong>Mic signal</strong></div>
       <i aria-hidden="true"></i>
     </div>
     <div class="practice-stat-grid">
@@ -1445,7 +1446,7 @@ function renderVolumePracticeFeedback() {
       <article><span>Strongest moment</span><strong>${analysis.peakDb.toFixed(1)} dBFS</strong></article>
     </div>
     <div class="practice-advice"><strong>How to use it</strong><p>${analysis.advice}</p></div>
-    <p class="practice-calibration-note">Volume depends on microphone gain and distance, so this guidance is relative to your current setup.</p>
+    <p class="practice-calibration-note">A microphone cannot reliably tell whether your voice would fill a room. This result checks recorded level and gives cautious guidance for your current distance and input gain.</p>
   `;
   setQuality(practiceFeedbackPanel, analysis.score);
   feedbackText.textContent = analysis.summary;
@@ -1453,18 +1454,23 @@ function renderVolumePracticeFeedback() {
 }
 
 function findTempoSplitIndex(flags) {
-  const start = Math.floor(flags.length * 0.25);
-  const end = Math.ceil(flags.length * 0.75);
-  let bestStart = Math.floor(flags.length / 2);
-  let bestLength = 0;
+  const expected = flags.length * 0.38;
+  const start = Math.floor(flags.length * 0.24);
+  const end = Math.ceil(flags.length * 0.58);
+  let bestStart = Math.round(expected);
+  let bestScore = -Infinity;
   let runStart = null;
 
   for (let index = start; index <= end; index += 1) {
     if (!flags[index] && runStart == null) runStart = index;
     if ((flags[index] || index === end) && runStart != null) {
       const runEnd = flags[index] ? index : index + 1;
-      if (runEnd - runStart > bestLength) {
-        bestLength = runEnd - runStart;
+      const runLength = runEnd - runStart;
+      const runMiddle = (runStart + runEnd) / 2;
+      const proximity = 1 - Math.abs(runMiddle - expected) / Math.max(1, flags.length * 0.22);
+      const score = runLength * 1.8 + proximity * 5;
+      if (score > bestScore) {
+        bestScore = score;
         bestStart = Math.round((runStart + runEnd) / 2);
       }
       runStart = null;
@@ -1472,6 +1478,34 @@ function findTempoSplitIndex(flags) {
   }
 
   return bestStart;
+}
+
+function estimateRhythmRate(rmsValues, frameDuration) {
+  if (rmsValues.length < 6) return 0;
+  const smoothed = rmsValues.map((value, index, values) => {
+    const start = Math.max(0, index - 2);
+    const end = Math.min(values.length, index + 3);
+    return mean(values.slice(start, end));
+  });
+  const floor = percentile(smoothed, 0.35);
+  const ceiling = percentile(smoothed, 0.9);
+  const threshold = floor + (ceiling - floor) * 0.34;
+  const minimumGap = Math.max(1, Math.round(0.16 / Math.max(frameDuration, 0.01)));
+  let peaks = 0;
+  let sincePeak = minimumGap;
+
+  smoothed.forEach((value, index, values) => {
+    const previous = values[index - 1] ?? value;
+    const next = values[index + 1] ?? value;
+    if (value > threshold && value >= previous && value > next && sincePeak >= minimumGap) {
+      peaks += 1;
+      sincePeak = 0;
+    } else {
+      sincePeak += 1;
+    }
+  });
+
+  return peaks / Math.max(0.5, rmsValues.length * frameDuration);
 }
 
 function getTempoPracticeAnalysis(duration) {
@@ -1488,30 +1522,35 @@ function getTempoPracticeAnalysis(duration) {
   const firstDuration = Math.max(0.5, splitIndex * frameDuration);
   const secondDuration = Math.max(0.5, (activeFlags.length - splitIndex) * frameDuration);
   const task = practiceTasks.tempo;
-  const firstRate = task.knownWords / firstDuration;
-  const secondRate = task.newWords / secondDuration;
-  const contrast = firstRate / Math.max(0.1, secondRate);
-  const score = contrast >= 1.35
-    ? 92
-    : contrast >= 1.18
-      ? 76
-      : contrast >= 1.02
-        ? 58
-        : 36;
-  const summary = contrast >= 1.18
+  const activeSamples = samples.slice(firstSpeechIndex, lastSpeechIndex + 1);
+  const firstRhythmRate = estimateRhythmRate(activeSamples.slice(0, splitIndex), frameDuration);
+  const secondRhythmRate = estimateRhythmRate(activeSamples.slice(splitIndex), frameDuration);
+  const wordPaceContrast = (task.knownWords / firstDuration) / Math.max(0.1, task.newWords / secondDuration);
+  const rhythmContrast = firstRhythmRate / Math.max(0.1, secondRhythmRate);
+  const contrast = wordPaceContrast * 0.35 + rhythmContrast * 0.65;
+  const score = contrast >= 1.22
+    ? 94
+    : contrast >= 1.08
+      ? 84
+      : contrast >= 0.96
+        ? 68
+        : contrast >= 0.84
+          ? 52
+          : 38;
+  const summary = contrast >= 1.08
     ? "Well done: the familiar setup moved faster and the new, important information slowed down clearly."
-    : contrast >= 1.02
-      ? "The first part was slightly faster, but the contrast needs to be clearer for listeners."
-      : "The new information was not slower than the familiar setup yet.";
-  const advice = contrast >= 1.35
+    : contrast >= 0.96
+      ? "The two parts had some contrast. Let the important second part breathe a little more."
+    : "The new information was not slower than the familiar setup yet.";
+  const advice = contrast >= 1.22
     ? "Keep this contrast and add a clean pause at the divider so the new idea feels intentional."
-    : "Make the first part lighter and quicker, pause, then give the second part more space between key phrases.";
+    : "Make the first part lighter and quicker, pause, then slow the second part naturally around key phrases. It does not need to become word-by-word.";
 
   return {
     firstDuration,
     secondDuration,
-    firstRate,
-    secondRate,
+    firstRate: firstRhythmRate,
+    secondRate: secondRhythmRate,
     contrast,
     score,
     summary,
@@ -1533,12 +1572,12 @@ function renderTempoPracticeFeedback(duration) {
       <article>
         <div><span>Familiar information</span><strong>Fast</strong></div>
         <div class="tempo-speed-track"><i style="width: ${(analysis.firstRate / maxRate) * 100}%"></i></div>
-        <b>${analysis.firstRate.toFixed(1)} words/sec</b>
+        <b>${analysis.firstRate.toFixed(1)} rhythm/sec</b>
       </article>
       <article>
         <div><span>New, important information</span><strong>Slow</strong></div>
         <div class="tempo-speed-track slow"><i style="width: ${(analysis.secondRate / maxRate) * 100}%"></i></div>
-        <b>${analysis.secondRate.toFixed(1)} words/sec</b>
+        <b>${analysis.secondRate.toFixed(1)} rhythm/sec</b>
       </article>
     </div>
     <div class="tempo-sentence-map">
