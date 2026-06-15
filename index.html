@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Voice Variety Coach</title>
-    <link rel="stylesheet" href="styles.css?v=footer-sources-20260529" />
+    <link rel="stylesheet" href="styles.css?v=practice-mode-20260615c" />
   </head>
   <body>
     <main class="app-shell">
@@ -27,6 +27,8 @@
           <label for="modeOwn">Own text</label>
           <input id="modeAudience" name="practiceMode" type="radio" value="audience" />
           <label for="modeAudience">Just audience</label>
+          <input id="modePractice" name="practiceMode" type="radio" value="practice" />
+          <label for="modePractice">Practice</label>
         </fieldset>
 
         <div class="prompt-card">
@@ -56,6 +58,24 @@
               </button>
             </div>
           </div>
+          <section class="skill-practice" id="skillPractice" aria-labelledby="skillPracticeTitle">
+            <div class="skill-practice-heading">
+              <div>
+                <p class="eyebrow">Focused exercise</p>
+                <h2 id="skillPracticeTitle">Choose one voice skill</h2>
+              </div>
+              <fieldset class="practice-skill-switch" aria-label="Voice skill">
+                <legend>Voice skill</legend>
+                <input id="practicePitch" name="practiceSkill" type="radio" value="pitch" checked />
+                <label for="practicePitch">Pitch</label>
+                <input id="practiceVolume" name="practiceSkill" type="radio" value="volume" />
+                <label for="practiceVolume">Volume</label>
+                <input id="practiceTempo" name="practiceSkill" type="radio" value="tempo" />
+                <label for="practiceTempo">Tempo</label>
+              </fieldset>
+            </div>
+            <div class="practice-task-card" id="practiceTaskCard"></div>
+          </section>
           <div class="reading-progress" aria-hidden="true">
             <div id="readingProgress"></div>
           </div>
@@ -259,7 +279,7 @@
           </div>
           <div>
             <span class="label">Goal</span>
-            <strong>30-60 sec</strong>
+            <strong id="recordingGoal">30-60 sec</strong>
           </div>
         </div>
 
@@ -268,6 +288,11 @@
 
       <aside class="coach-panel" aria-labelledby="coach-title">
         <h2 id="coach-title">Coach Feedback</h2>
+        <section class="practice-feedback-panel" id="practiceFeedbackPanel" aria-live="polite">
+          <div class="practice-feedback-empty">
+            Choose an exercise, record it, and your focused feedback will appear here.
+          </div>
+        </section>
         <div class="score-ring" aria-label="Voice variety score">
           <span id="scoreValue">--</span>
           <small>score</small>
@@ -362,6 +387,6 @@
       </p>
     </footer>
 
-    <script src="app.js?v=footer-sources-20260529"></script>
+    <script src="app.js?v=practice-mode-20260615c"></script>
   </body>
 </html>

@@ -65,6 +65,32 @@ This will feel different at first. Some of us will need to step back, and others
   ]
 };
 
+const practiceTasks = {
+  pitch: {
+    title: "Pitch glide",
+    definition: "Pitch is how high or low your voice sounds.",
+    instruction: "On one continuous “ah” sound, start at your highest comfortable note and glide smoothly down to your lowest comfortable note. Never strain.",
+    goal: "6-12 sec"
+  },
+  volume: {
+    title: "Useful speaking volume",
+    definition: "Volume is how softly or loudly your voice reaches a listener.",
+    instruction: "Read the sentence once at the volume you would naturally use.",
+    text: "I love chocolate.",
+    goal: "3-8 sec"
+  },
+  tempo: {
+    title: "Fast setup, slow new idea",
+    definition: "Tempo is the speed at which you deliver words and ideas.",
+    instruction: "Read the familiar first part quickly. Pause at the divider, then read the new and important second part slowly.",
+    knownText: "Most people know that an octopus has eight arms.",
+    newText: "What is less known, and very important, is that it has three hearts and blue blood.",
+    knownWords: 9,
+    newWords: 16,
+    goal: "8-18 sec"
+  }
+};
+
 const passageTitle = document.querySelector("#passageTitle");
 const readingText = document.querySelector("#readingText");
 const ownTextInput = document.querySelector("#ownTextInput");
@@ -74,6 +100,10 @@ const modeInputs = Array.from(document.querySelectorAll("input[name='practiceMod
 const fontSizeInputs = Array.from(document.querySelectorAll("input[name='readingSize']"));
 const scrollModeInputs = Array.from(document.querySelectorAll("input[name='scrollMode']"));
 const audienceTypeInputs = Array.from(document.querySelectorAll("input[name='audienceType']"));
+const practiceSkillInputs = Array.from(document.querySelectorAll("input[name='practiceSkill']"));
+const practiceTaskCard = document.querySelector("#practiceTaskCard");
+const practiceFeedbackPanel = document.querySelector("#practiceFeedbackPanel");
+const recordingGoal = document.querySelector("#recordingGoal");
 const newPromptButton = document.querySelector("#newPromptButton");
 const recordButton = document.querySelector("#recordButton");
 const playButton = document.querySelector("#playButton");
@@ -132,6 +162,7 @@ let animationFrame;
 let audioUrl;
 let samples = [];
 let pitchReadings = [];
+let pitchTimeline = [];
 let speakingFrames = 0;
 let quietFrames = 0;
 let liveFrame = 0;
@@ -162,12 +193,138 @@ let audienceAnalysisHistory = [];
 let lastAudienceUpdateAt = 0;
 let latestAnalysisResult = null;
 let activeDetailMetric = "pitch";
+let currentPracticeSkill = "pitch";
+
+function renderPracticeTask() {
+  if (!practiceTaskCard) return;
+  const task = practiceTasks[currentPracticeSkill];
+  recordingGoal.textContent = task.goal;
+
+  if (currentPracticeSkill === "pitch") {
+    practiceTaskCard.innerHTML = `
+      <div class="practice-task-copy">
+        <span class="practice-task-kicker">High → low</span>
+        <h3>${task.title}</h3>
+        <p><strong>${task.definition}</strong> ${task.instruction}</p>
+      </div>
+      <div class="pitch-glide-demo" aria-hidden="true">
+        <span>High</span>
+        <svg viewBox="0 0 320 92" role="img" aria-label="A smooth pitch line gliding from high to low">
+          <path d="M8 14 C92 14 228 78 312 78"></path>
+        </svg>
+        <span>Low</span>
+      </div>
+      <button class="secondary-button practice-example-button" id="playPitchExample" type="button">Play voice example</button>
+      <small class="practice-safety-note">Use only your comfortable range. Stop if your throat feels tight.</small>
+    `;
+    document.querySelector("#playPitchExample")?.addEventListener("click", playPitchGlideExample);
+    return;
+  }
+
+  if (currentPracticeSkill === "volume") {
+    practiceTaskCard.innerHTML = `
+      <div class="practice-task-copy">
+        <span class="practice-task-kicker">One clear sentence</span>
+        <h3>${task.title}</h3>
+        <p><strong>${task.definition}</strong> ${task.instruction}</p>
+      </div>
+      <blockquote class="practice-reading-line">${task.text}</blockquote>
+    `;
+    return;
+  }
+
+  practiceTaskCard.innerHTML = `
+    <div class="practice-task-copy">
+      <span class="practice-task-kicker">Contrast the pace</span>
+      <h3>${task.title}</h3>
+      <p><strong>${task.definition}</strong> ${task.instruction}</p>
+    </div>
+    <div class="tempo-practice-text">
+      <div class="tempo-text-part fast">
+        <span>Read fast</span>
+        <strong>${task.knownText}</strong>
+      </div>
+      <div class="tempo-text-divider" aria-hidden="true">Pause</div>
+      <div class="tempo-text-part slow">
+        <span>Read slowly</span>
+        <strong>${task.newText}</strong>
+      </div>
+    </div>
+  `;
+}
+
+function resetPracticeFeedback(message = "Record this exercise and your focused feedback will appear here.") {
+  if (!practiceFeedbackPanel) return;
+  practiceFeedbackPanel.classList.remove("quality-low", "quality-mid", "quality-high", "quality-neutral");
+  practiceFeedbackPanel.innerHTML = `<div class="practice-feedback-empty">${message}</div>`;
+}
+
+function setPracticeSkill(skill) {
+  currentPracticeSkill = skill;
+  practiceSkillInputs.forEach(input => {
+    input.checked = input.value === skill;
+  });
+  renderPracticeTask();
+  resetPracticeFeedback();
+  feedbackText.textContent = `Practice ${skill} with the focused exercise, then review the detailed result.`;
+}
+
+function playPitchGlideExample() {
+  const AudioContextConstructor = getAudioContextConstructor();
+  if (!AudioContextConstructor) {
+    setRecordingNotice("This browser cannot play the voice example.", "warning");
+    return;
+  }
+
+  const demoContext = new AudioContextConstructor();
+  const duration = 6.5;
+  const now = demoContext.currentTime;
+  const voiceSource = demoContext.createOscillator();
+  const masterGain = demoContext.createGain();
+  const formants = [
+    { frequency: 800, gain: 1 },
+    { frequency: 1150, gain: 0.7 },
+    { frequency: 2900, gain: 0.22 }
+  ];
+
+  voiceSource.type = "sawtooth";
+  voiceSource.frequency.setValueAtTime(320, now);
+  voiceSource.frequency.exponentialRampToValueAtTime(90, now + duration);
+  masterGain.gain.setValueAtTime(0.0001, now);
+  masterGain.gain.exponentialRampToValueAtTime(0.16, now + 0.18);
+  masterGain.gain.setValueAtTime(0.16, now + duration - 0.25);
+  masterGain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+  formants.forEach(formant => {
+    const filter = demoContext.createBiquadFilter();
+    const formantGain = demoContext.createGain();
+    filter.type = "bandpass";
+    filter.frequency.value = formant.frequency;
+    filter.Q.value = 7;
+    formantGain.gain.value = formant.gain;
+    voiceSource.connect(filter);
+    filter.connect(formantGain);
+    formantGain.connect(masterGain);
+  });
+
+  masterGain.connect(demoContext.destination);
+  voiceSource.start(now);
+  voiceSource.stop(now + duration);
+  setRecordingNotice("Playing one continuous “ah”: very high to very low.", "active");
+  voiceSource.addEventListener("ended", () => {
+    setRecordingNotice("Example complete. Now make one continuous high-to-low “ah” in your comfortable range.", "success");
+    demoContext.close();
+  });
+}
 
 function setPrompt() {
   if (currentMode === "own") {
     renderOwnText();
   } else if (currentMode === "audience") {
     clearPassage();
+  } else if (currentMode === "practice") {
+    clearPassage();
+    renderPracticeTask();
   } else {
     const passages = passageGroups[currentMode];
     const index = Math.floor(Math.random() * passages.length);
@@ -183,6 +340,7 @@ function setMode(mode) {
   currentMode = mode;
   document.body.classList.toggle("own-text-mode", mode === "own");
   document.body.classList.toggle("audience-only-mode", mode === "audience");
+  document.body.classList.toggle("practice-mode", mode === "practice");
 
   modeInputs.forEach(input => {
     input.checked = input.value === mode;
@@ -191,10 +349,17 @@ function setMode(mode) {
   updateAudiencePresentation();
 
   if (mode === "own") {
+    recordingGoal.textContent = "30-60 sec";
     feedbackText.textContent = "Speak your own text. I will judge vocal variety from pitch, volume, and pacing.";
   } else if (mode === "audience") {
+    recordingGoal.textContent = "30-60 sec";
     feedbackText.textContent = "Speak freely to the audience. I will judge vocal variety from pitch, volume, tempo, pauses, and emphasis.";
+  } else if (mode === "practice") {
+    renderPracticeTask();
+    resetPracticeFeedback();
+    feedbackText.textContent = `Practice ${currentPracticeSkill} with the focused exercise, then review the detailed result.`;
   } else {
+    recordingGoal.textContent = "30-60 sec";
     feedbackText.textContent = "Record a short take and I will listen for variety in energy, pitch, and pace.";
   }
 
@@ -813,21 +978,21 @@ function describePitchZone(pitchHz) {
 
   if (pitchHz < 145) {
     return {
-      label: "Lower pitch area",
-      note: "Often read as a lower speaking pitch, but pitch alone does not define the voice."
+      label: "More masculine-perceived range",
+      note: "Below about 145 Hz is usually perceived as more masculine, though pitch alone does not define a voice."
     };
   }
 
-  if (pitchHz <= 185) {
+  if (pitchHz <= 175) {
     return {
-      label: "Overlap area",
-      note: "This sits in the shared middle where many voices can sound different for reasons beyond pitch."
+      label: "Androgynous or ambiguous range",
+      note: "About 145-175 Hz is often perceived as more androgynous or ambiguous."
     };
   }
 
   return {
-    label: "Higher pitch area",
-    note: "Often read as a higher speaking pitch, but resonance and delivery matter too."
+    label: "More feminine-perceived range",
+    note: "Above about 175-180 Hz is usually perceived as more feminine, though resonance and delivery also matter."
   };
 }
 
@@ -866,7 +1031,7 @@ function getPitchRangeHz(result) {
 
 function renderPitchDetail(result) {
   const pitchHz = result.pitchMedianHz || 0;
-  const voiceZone = linearScore(pitchHz, 85, 255);
+  const voiceZone = linearScore(pitchHz, 90, 255);
   const rangeFill = linearScore(result.pitchRange, 0, 12);
   const pitchZone = describePitchZone(pitchHz);
   const rangeHz = getPitchRangeHz(result);
@@ -885,9 +1050,9 @@ function renderPitchDetail(result) {
         <span>${rangeHz ? `${rangeHz.low}-${rangeHz.high} Hz` : "Range unclear"}</span>
       </div>
       <div class="pitch-spectrum" aria-hidden="true">
-        <span class="pitch-spectrum-band male" style="--band-left: ${pitchHzToSpectrumPosition(85)}%; --band-right: ${pitchHzToSpectrumPosition(180)}%;"></span>
-        <span class="pitch-spectrum-band shared" style="--band-left: ${pitchHzToSpectrumPosition(145)}%; --band-right: ${pitchHzToSpectrumPosition(185)}%;"></span>
-        <span class="pitch-spectrum-band female" style="--band-left: ${pitchHzToSpectrumPosition(165)}%; --band-right: ${pitchHzToSpectrumPosition(255)}%;"></span>
+        <span class="pitch-spectrum-band male" style="--band-left: ${pitchHzToSpectrumPosition(80)}%; --band-right: ${pitchHzToSpectrumPosition(145)}%;"></span>
+        <span class="pitch-spectrum-band shared" style="--band-left: ${pitchHzToSpectrumPosition(145)}%; --band-right: ${pitchHzToSpectrumPosition(175)}%;"></span>
+        <span class="pitch-spectrum-band female" style="--band-left: ${pitchHzToSpectrumPosition(175)}%; --band-right: ${pitchHzToSpectrumPosition(265)}%;"></span>
         ${rangeHz ? `
           <span class="pitch-spectrum-range"></span>
           <span class="pitch-spectrum-median"></span>
@@ -895,16 +1060,16 @@ function renderPitchDetail(result) {
       </div>
       <div class="pitch-spectrum-labels">
         <div>
-          <strong>Male range</strong>
-          <span>85-180 Hz</span>
+          <strong>More masculine</strong>
+          <span>Below ~145 Hz</span>
         </div>
         <div>
-          <strong>Androgynous overlap</strong>
-          <span>145-185 Hz</span>
+          <strong>Androgynous / ambiguous</strong>
+          <span>~145-175 Hz</span>
         </div>
         <div>
-          <strong>Female range</strong>
-          <span>165-255 Hz</span>
+          <strong>More feminine</strong>
+          <span>Above ~175-180 Hz</span>
         </div>
       </div>
       <div class="pitch-map-values">
@@ -1110,6 +1275,307 @@ function renderMetricDetail(metric = activeDetailMetric) {
   };
 
   metricDetailPanel.innerHTML = renderers[metric]?.(latestAnalysisResult) || renderPitchDetail(latestAnalysisResult);
+}
+
+function renderPracticeResultHeader(title, score, summary) {
+  const quality = getQualityClass(score);
+  return `
+    <div class="practice-result-header ${quality}">
+      <div>
+        <span>Focused feedback</span>
+        <h3>${title}</h3>
+      </div>
+      <strong>${Math.round(score)}<small>/100</small></strong>
+    </div>
+    <p class="practice-result-summary">${summary}</p>
+  `;
+}
+
+function getPitchGlideAnalysis(duration) {
+  const points = pitchTimeline
+    .filter(point => point.hz >= 70 && point.hz <= 450)
+    .map(point => ({
+      hz: point.hz,
+      time: (point.sampleIndex / Math.max(1, samples.length - 1)) * duration
+    }));
+
+  if (points.length < 10) return null;
+
+  const values = points.map(point => point.hz);
+  const low = percentile(values, 0.08);
+  const high = percentile(values, 0.92);
+  const rangeSemitones = 12 * Math.log2(high / low);
+  const normalized = points.map(point => clamp((point.hz - low) / Math.max(1, high - low), 0, 1));
+  const edgeCount = Math.max(2, Math.round(normalized.length * 0.18));
+  const startLevel = mean(normalized.slice(0, edgeCount));
+  const endLevel = mean(normalized.slice(-edgeCount));
+  const downwardMoves = normalized.reduce((count, value, index, values) => {
+    if (index === 0) return count;
+    return value <= values[index - 1] + 0.06 ? count + 1 : count;
+  }, 0);
+  const downwardConsistency = downwardMoves / Math.max(1, normalized.length - 1);
+  const shapeScore = clamp(
+    startLevel * 35 +
+      (1 - endLevel) * 35 +
+      downwardConsistency * 30,
+    0,
+    100
+  );
+  const rangeScore = linearScore(rangeSemitones, 5, 18);
+  const score = clamp(rangeScore * 0.62 + shapeScore * 0.38, 0, 100);
+
+  const chartPoints = points
+    .filter((_, index) => index % Math.max(1, Math.floor(points.length / 90)) === 0)
+    .map(point => {
+      const x = (point.time / Math.max(0.1, duration)) * 100;
+      const y = 94 - clamp((point.hz - low) / Math.max(1, high - low), 0, 1) * 84;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+
+  return { low, high, rangeSemitones, startLevel, endLevel, downwardConsistency, shapeScore, score, chartPoints };
+}
+
+function renderPitchPracticeFeedback(duration) {
+  const analysis = getPitchGlideAnalysis(duration);
+  if (!analysis) {
+    resetPracticeFeedback("I could not trace enough steady pitch. Try a continuous “ah” for 5-10 seconds and keep the microphone close.");
+    return false;
+  }
+
+  const shapeGood = analysis.shapeScore >= 70;
+  const rangeLabel = analysis.rangeSemitones >= 12
+    ? "wide"
+    : analysis.rangeSemitones >= 7
+      ? "moderate"
+      : "narrow";
+  const summary = shapeGood
+    ? `You made a clear high-to-low glide with a ${rangeLabel} comfortable range.`
+    : `Your ${rangeLabel} range was audible, but the pitch did not descend smoothly from high to low yet.`;
+  const advice = analysis.rangeSemitones < 7
+    ? "Keep the sound continuous and explore a little farther from high to low without pushing."
+    : analysis.startLevel < 0.65
+      ? "Begin a little higher, while staying comfortable, so the direction is clear immediately."
+      : analysis.endLevel > 0.35
+        ? "Continue the glide a little lower before finishing, without pressing your throat."
+        : "Repeat it once more and aim for one even, uninterrupted descent.";
+
+  practiceFeedbackPanel.innerHTML = `
+    ${renderPracticeResultHeader("Pitch glide", analysis.score, summary)}
+    <div class="practice-chart pitch-practice-chart">
+      <div class="practice-chart-labels"><span>High</span><span>Low</span></div>
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-label="Your pitch movement over time">
+        <path class="pitch-target-path" d="M1 8 C28 8 72 92 99 92"></path>
+        <polyline points="${analysis.chartPoints}"></polyline>
+      </svg>
+      <div class="practice-chart-axis"><span>Start high</span><span>Glide down</span><span>Finish low</span></div>
+    </div>
+    <div class="practice-stat-grid">
+      <article><span>Lowest easy pitch</span><strong>${Math.round(analysis.low)} Hz</strong></article>
+      <article><span>Highest easy pitch</span><strong>${Math.round(analysis.high)} Hz</strong></article>
+      <article><span>Glide range</span><strong>${analysis.rangeSemitones.toFixed(1)} semitones</strong></article>
+    </div>
+    <div class="practice-advice"><strong>Next try</strong><p>${advice}</p></div>
+  `;
+  setQuality(practiceFeedbackPanel, analysis.score);
+  feedbackText.textContent = summary;
+  return true;
+}
+
+function getVolumePracticeAnalysis() {
+  const threshold = getSpeechThreshold(samples);
+  const speechRms = samples.filter(value => value > threshold);
+  if (speechRms.length < 8) return null;
+
+  const speechDb = speechRms.map(rmsToDb);
+  const medianDb = percentile(speechDb, 0.5);
+  const peakDb = percentile(speechDb, 0.95);
+  const clippingRatio = samples.filter(value => value > 0.88).length / Math.max(1, samples.length);
+  const position = linearScore(medianDb, -44, -14);
+
+  let setting = "one-to-one conversation";
+  let score = 78;
+  let summary = "At this microphone distance, your level suits a calm one-to-one conversation.";
+  let advice = "For a team meeting, add a little more breath support and send the final word toward the farthest listener.";
+
+  if (medianDb < -38) {
+    setting = "very close or quiet conversation";
+    score = 58;
+    summary = "At this microphone distance, your voice was quite soft and may be hard to hear beyond one nearby listener.";
+    advice = "Keep the same relaxed tone, but speak slightly more firmly for a one-to-one conversation.";
+  } else if (medianDb < -31) {
+    setting = "one-to-one conversation";
+  } else if (medianDb < -24) {
+    setting = "small team meeting";
+    score = 88;
+    summary = "At this microphone distance, your level should carry well in a one-to-one conversation or small team meeting.";
+    advice = "This is a useful everyday level. For a large room, project with breath support rather than tightening your throat.";
+  } else {
+    setting = "large room or audience";
+    score = clippingRatio > 0.02 ? 62 : 82;
+    summary = clippingRatio > 0.02
+      ? "Your voice was strongly projected, but the signal became too hot or too close to the microphone."
+      : "At this microphone distance, your level was strongly projected and better suited to a larger room or audience.";
+    advice = clippingRatio > 0.02
+      ? "Move slightly farther from the microphone or reduce the input level while keeping the same supported voice."
+      : "Keep the projection supported and relaxed; avoid turning it into a shout.";
+  }
+
+  return { medianDb, peakDb, clippingRatio, position, setting, score, summary, advice };
+}
+
+function renderVolumePracticeFeedback() {
+  const analysis = getVolumePracticeAnalysis();
+  if (!analysis) {
+    resetPracticeFeedback("I could not hear enough of the sentence. Try again with the microphone nearby and speak the full line.");
+    return false;
+  }
+
+  practiceFeedbackPanel.innerHTML = `
+    ${renderPracticeResultHeader("Speaking volume", analysis.score, analysis.summary)}
+    <div class="volume-setting-scale" style="${markerStyle(analysis.position)}">
+      <div><span>Quiet</span><strong>1-to-1</strong></div>
+      <div><span>Clear</span><strong>Team</strong></div>
+      <div><span>Projected</span><strong>Audience</strong></div>
+      <i aria-hidden="true"></i>
+    </div>
+    <div class="practice-stat-grid">
+      <article><span>Best fit</span><strong>${analysis.setting}</strong></article>
+      <article><span>Typical level</span><strong>${analysis.medianDb.toFixed(1)} dBFS</strong></article>
+      <article><span>Strongest moment</span><strong>${analysis.peakDb.toFixed(1)} dBFS</strong></article>
+    </div>
+    <div class="practice-advice"><strong>How to use it</strong><p>${analysis.advice}</p></div>
+    <p class="practice-calibration-note">Volume depends on microphone gain and distance, so this guidance is relative to your current setup.</p>
+  `;
+  setQuality(practiceFeedbackPanel, analysis.score);
+  feedbackText.textContent = analysis.summary;
+  return true;
+}
+
+function findTempoSplitIndex(flags) {
+  const start = Math.floor(flags.length * 0.25);
+  const end = Math.ceil(flags.length * 0.75);
+  let bestStart = Math.floor(flags.length / 2);
+  let bestLength = 0;
+  let runStart = null;
+
+  for (let index = start; index <= end; index += 1) {
+    if (!flags[index] && runStart == null) runStart = index;
+    if ((flags[index] || index === end) && runStart != null) {
+      const runEnd = flags[index] ? index : index + 1;
+      if (runEnd - runStart > bestLength) {
+        bestLength = runEnd - runStart;
+        bestStart = Math.round((runStart + runEnd) / 2);
+      }
+      runStart = null;
+    }
+  }
+
+  return bestStart;
+}
+
+function getTempoPracticeAnalysis(duration) {
+  const threshold = getSpeechThreshold(samples);
+  const flags = samples.map(value => value > threshold);
+  const firstSpeechIndex = flags.indexOf(true);
+  const lastSpeechIndex = flags.lastIndexOf(true);
+  const speechCount = flags.filter(Boolean).length;
+  if (speechCount < 12) return null;
+
+  const activeFlags = flags.slice(firstSpeechIndex, lastSpeechIndex + 1);
+  const splitIndex = findTempoSplitIndex(activeFlags);
+  const frameDuration = duration / Math.max(1, samples.length);
+  const firstDuration = Math.max(0.5, splitIndex * frameDuration);
+  const secondDuration = Math.max(0.5, (activeFlags.length - splitIndex) * frameDuration);
+  const task = practiceTasks.tempo;
+  const firstRate = task.knownWords / firstDuration;
+  const secondRate = task.newWords / secondDuration;
+  const contrast = firstRate / Math.max(0.1, secondRate);
+  const score = contrast >= 1.35
+    ? 92
+    : contrast >= 1.18
+      ? 76
+      : contrast >= 1.02
+        ? 58
+        : 36;
+  const summary = contrast >= 1.18
+    ? "Well done: the familiar setup moved faster and the new, important information slowed down clearly."
+    : contrast >= 1.02
+      ? "The first part was slightly faster, but the contrast needs to be clearer for listeners."
+      : "The new information was not slower than the familiar setup yet.";
+  const advice = contrast >= 1.35
+    ? "Keep this contrast and add a clean pause at the divider so the new idea feels intentional."
+    : "Make the first part lighter and quicker, pause, then give the second part more space between key phrases.";
+
+  return {
+    firstDuration,
+    secondDuration,
+    firstRate,
+    secondRate,
+    contrast,
+    score,
+    summary,
+    advice
+  };
+}
+
+function renderTempoPracticeFeedback(duration) {
+  const analysis = getTempoPracticeAnalysis(duration);
+  if (!analysis) {
+    resetPracticeFeedback("I could not detect enough of both sentence parts. Read the full text and make a clear pause at the divider.");
+    return false;
+  }
+
+  const maxRate = Math.max(analysis.firstRate, analysis.secondRate, 1);
+  practiceFeedbackPanel.innerHTML = `
+    ${renderPracticeResultHeader("Tempo contrast", analysis.score, analysis.summary)}
+    <div class="tempo-result-chart">
+      <article>
+        <div><span>Familiar information</span><strong>Fast</strong></div>
+        <div class="tempo-speed-track"><i style="width: ${(analysis.firstRate / maxRate) * 100}%"></i></div>
+        <b>${analysis.firstRate.toFixed(1)} words/sec</b>
+      </article>
+      <article>
+        <div><span>New, important information</span><strong>Slow</strong></div>
+        <div class="tempo-speed-track slow"><i style="width: ${(analysis.secondRate / maxRate) * 100}%"></i></div>
+        <b>${analysis.secondRate.toFixed(1)} words/sec</b>
+      </article>
+    </div>
+    <div class="tempo-sentence-map">
+      <span class="done-fast">Fast setup<br><b>${analysis.firstDuration.toFixed(1)} sec</b></span>
+      <i>Pause</i>
+      <span class="done-slow">Slow new idea<br><b>${analysis.secondDuration.toFixed(1)} sec</b></span>
+    </div>
+    <div class="practice-advice"><strong>Next try</strong><p>${analysis.advice}</p></div>
+  `;
+  setQuality(practiceFeedbackPanel, analysis.score);
+  feedbackText.textContent = analysis.summary;
+  return true;
+}
+
+function analyzePracticeRecording(duration) {
+  const minimumDuration = currentPracticeSkill === "pitch"
+    ? 4
+    : currentPracticeSkill === "volume"
+      ? 3
+      : 6;
+  if (duration < minimumDuration) {
+    resetPracticeFeedback(`That take was too short. Try the full exercise for at least ${minimumDuration} seconds.`);
+    setRecordingNotice("The practice take was too short for useful feedback.", "warning");
+    return;
+  }
+
+  const rendered = currentPracticeSkill === "pitch"
+    ? renderPitchPracticeFeedback(duration)
+    : currentPracticeSkill === "volume"
+      ? renderVolumePracticeFeedback()
+      : renderTempoPracticeFeedback(duration);
+
+  if (rendered) {
+    setRecordingNotice("Practice analysis complete. Review the focused feedback.", "success");
+  } else {
+    setRecordingNotice("I need a clearer take before I can give focused feedback.", "warning");
+  }
 }
 
 function describeColourScore(score) {
@@ -1439,16 +1905,8 @@ function setRecordingNotice(message, tone = "") {
 }
 
 function getMicrophoneIssue() {
-  const localHosts = ["localhost", "127.0.0.1", "::1"];
-  const isLocalHost = localHosts.includes(window.location.hostname);
-  const isHttps = window.location.protocol === "https:";
-
-  if (!isHttps && !isLocalHost) {
-    return "Safari cannot record from the file version. Start the local web server and open http://127.0.0.1:5173/index.html.";
-  }
-
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    return "This browser cannot access the microphone from this page. Try http://127.0.0.1:5173/index.html in Chrome or Safari.";
+    return "This browser is not offering microphone access for this page. Check the browser microphone permission and reopen the page.";
   }
 
   if (!window.MediaRecorder) {
@@ -2173,10 +2631,13 @@ function drawLiveWave() {
   rms > 0.035 ? speakingFrames += 1 : quietFrames += 1;
 
   const pitch = estimatePitch(floatData, audioContext.sampleRate, rms);
-  if (pitch) pitchReadings.push(pitch);
+  if (pitch) {
+    pitchReadings.push(pitch);
+    pitchTimeline.push({ hz: pitch, sampleIndex: samples.length - 1 });
+  }
 
   liveFrame += 1;
-  if (liveFrame % 8 === 0) {
+  if (currentMode !== "practice" && liveFrame % 8 === 0) {
     const elapsedSeconds = getElapsedSeconds();
     if (elapsedSeconds < MIN_FEEDBACK_SECONDS) {
       updateListeningPeriod(elapsedSeconds);
@@ -2223,6 +2684,11 @@ function describeLevel(value, lowLabel, midLabel, highLabel) {
 
 function analyzeRecording() {
   const duration = Math.max(1, getElapsedSeconds());
+
+  if (currentMode === "practice") {
+    analyzePracticeRecording(duration);
+    return;
+  }
 
   if (duration < MIN_FEEDBACK_SECONDS) {
     scoreValue.textContent = "--";
@@ -2349,24 +2815,31 @@ async function startRecording() {
   analyser.fftSize = 2048;
   source = audioContext.createMediaStreamSource(stream);
   source.connect(analyser);
-  startLivePraatAnalysis();
+  if (currentMode !== "practice") startLivePraatAnalysis();
 
   chunks = [];
   recordedMimeType = "";
   samples = [];
   pitchReadings = [];
+  pitchTimeline = [];
   speakingFrames = 0;
   quietFrames = 0;
   liveFrame = 0;
-  setMetricDetailEmpty("Recording now. The detailed charts will appear after this take.");
-  resetAudienceTracking();
+  if (currentMode === "practice") {
+    resetPracticeFeedback("Listening to this exercise...");
+  } else {
+    setMetricDetailEmpty("Recording now. The detailed charts will appear after this take.");
+    resetAudienceTracking();
+  }
   if (audioUrl) URL.revokeObjectURL(audioUrl);
   audioUrl = "";
   playbackAudio.removeAttribute("src");
   playbackAudio.classList.remove("ready");
   playbackAudio.load();
   clearQualityColors();
-  resetVocalColour("Listening first. Vocal Colour will update after a few seconds.");
+  if (currentMode !== "practice") {
+    resetVocalColour("Listening first. Vocal Colour will update after a few seconds.");
+  }
   if (hasReadingPassage()) {
     updateReadingProgress(0, "Listening for the words you read...");
   }
@@ -2393,11 +2866,17 @@ async function startRecording() {
   recordButton.classList.add("recording");
   microphoneSelect.disabled = true;
   playButton.disabled = true;
-  setRecordingNotice("Recording. The audience will listen first, then average its attention over time.", "active");
-  feedbackText.textContent = currentMode === "own"
-    ? "Speak freely. After 5 seconds, the audience will react gradually and the final score will reflect the whole take."
-    : "The audience is listening first. After 5 seconds, they will react gradually and the final score will reflect the whole take.";
-  updateListeningPeriod(0);
+  if (currentMode === "practice") {
+    const task = practiceTasks[currentPracticeSkill];
+    setRecordingNotice(`Recording ${task.title.toLowerCase()}. Complete the exercise, then stop.`, "active");
+    feedbackText.textContent = task.instruction;
+  } else {
+    setRecordingNotice("Recording. The audience will listen first, then average its attention over time.", "active");
+    feedbackText.textContent = currentMode === "own"
+      ? "Speak freely. After 5 seconds, the audience will react gradually and the final score will reflect the whole take."
+      : "The audience is listening first. After 5 seconds, they will react gradually and the final score will reflect the whole take.";
+    updateListeningPeriod(0);
+  }
 }
 
 async function cleanupFailedRecordingStart() {
@@ -2451,7 +2930,7 @@ function finishRecording() {
   microphoneSelect.disabled = false;
   setRecordingNotice("Recording complete. Play it back or try another take.", "success");
   analyzeRecording();
-  analyzeWithPraat(blob);
+  if (currentMode !== "practice") analyzeWithPraat(blob);
 }
 
 async function toggleRecording() {
@@ -2464,7 +2943,9 @@ async function toggleRecording() {
     await startRecording();
   } catch (error) {
     const message = error.name === "NotAllowedError"
-      ? "Microphone permission was blocked. Allow microphone access in your browser and try again."
+      ? window.location.protocol === "file:"
+        ? "Microphone permission was blocked for this local page. Allow microphone access for the in-app browser, reopen the page, and try again."
+        : "Microphone permission was blocked. Allow microphone access in your browser and try again."
       : error.message || "I could not access the microphone. Please allow microphone permission in your browser and try again.";
 
     sessionPill.textContent = "Ready";
@@ -2518,6 +2999,11 @@ audienceTypeInputs.forEach(input => {
     if (input.checked) setAudienceType(input.value);
   });
 });
+practiceSkillInputs.forEach(input => {
+  input.addEventListener("change", () => {
+    if (input.checked) setPracticeSkill(input.value);
+  });
+});
 metricDetailButtons.forEach(button => {
   button.addEventListener("click", () => renderMetricDetail(button.dataset.detailMetric));
 });
@@ -2534,6 +3020,7 @@ if (navigator.mediaDevices?.addEventListener) {
 setReadingSize("large");
 setScrollMode("auto");
 setAudienceType("duo");
+setPracticeSkill("pitch");
 setMode("story");
 drawIdleWave();
 refreshMicrophoneInputs();
