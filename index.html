@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Voice Variety Coach</title>
-    <link rel="stylesheet" href="styles.css?v=practice-mode-20260615e" />
+    <link rel="stylesheet" href="styles.css?v=audience-response-20260617" />
   </head>
   <body>
     <main class="app-shell">
@@ -93,11 +93,19 @@
               <p class="eyebrow">Live audience</p>
               <h2 id="audience-title">Classroom</h2>
             </div>
-            <div class="attention-meter" aria-label="Audience attention">
-              <span id="attentionLabel">Warming up</span>
-              <div class="meter-track">
-                <div id="attentionMeter"></div>
+            <div class="audience-controls">
+              <div class="attention-meter" aria-label="Audience attention">
+                <span id="attentionLabel">Warming up</span>
+                <div class="meter-track">
+                  <div id="attentionMeter"></div>
+                </div>
               </div>
+              <label class="audience-responsiveness" for="audienceResponsiveness">
+                <span>Responsiveness <strong id="audienceResponsivenessLabel">Default</strong></span>
+                <input id="audienceResponsiveness" type="range" min="0" max="100" value="50" />
+                <small>Calm</small>
+                <small>Reactive</small>
+              </label>
             </div>
           </div>
 
@@ -387,6 +395,6 @@
       </p>
     </footer>
 
-    <script src="app.js?v=practice-mode-20260615e"></script>
+    <script src="app.js?v=audience-response-20260617"></script>
   </body>
 </html>

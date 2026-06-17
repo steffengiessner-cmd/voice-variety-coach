@@ -660,8 +660,13 @@ body.is-recording .practice-skill-switch {
   margin: 0;
 }
 
+.audience-controls {
+  width: min(300px, 48%);
+  display: grid;
+  gap: 10px;
+}
+
 .attention-meter {
-  width: min(250px, 46%);
   display: grid;
   gap: 8px;
 }
@@ -736,6 +741,43 @@ body.audience-only-mode .audience-choice {
   border-radius: inherit;
   background: linear-gradient(90deg, var(--coral), var(--gold), var(--green), var(--accent));
   transition: width 240ms ease;
+}
+
+.audience-responsiveness {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 8px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.audience-responsiveness > span {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: #425362;
+}
+
+.audience-responsiveness strong {
+  color: var(--accent-dark);
+}
+
+.audience-responsiveness input {
+  grid-column: 1 / -1;
+  width: 100%;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.audience-responsiveness small {
+  font-size: 0.68rem;
+  font-weight: 850;
+}
+
+.audience-responsiveness small:last-child {
+  text-align: right;
 }
 
 .audience-row {
@@ -3706,6 +3748,10 @@ body.practice-mode .practice-feedback-panel.quality-high {
   }
 
   .attention-meter {
+    width: 100%;
+  }
+
+  .audience-controls {
     width: 100%;
   }
 

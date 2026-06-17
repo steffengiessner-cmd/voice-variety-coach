@@ -131,6 +131,8 @@ const feedbackBox = document.querySelector(".feedback-box");
 const scoreRing = document.querySelector(".score-ring");
 const attentionMeter = document.querySelector("#attentionMeter");
 const attentionLabel = document.querySelector("#attentionLabel");
+const audienceResponsiveness = document.querySelector("#audienceResponsiveness");
+const audienceResponsivenessLabel = document.querySelector("#audienceResponsivenessLabel");
 const kids = Array.from(document.querySelectorAll("[data-kid]"));
 const MIN_FEEDBACK_SECONDS = 5;
 const PRAAT_ANALYZE_URL = "http://127.0.0.1:8000/analyze";
@@ -175,6 +177,7 @@ let timedScrollInterval;
 let currentMode = "story";
 let currentScrollMode = "auto";
 let currentAudienceType = "duo";
+let currentAudienceResponsiveness = 50;
 let selectedMicrophoneId = "";
 let liveAudioProcessor;
 let liveMonitorGain;
@@ -385,6 +388,34 @@ function getEffectiveAudienceType() {
 
 function isSuperheroAudience() {
   return getEffectiveAudienceType() === "superheroes";
+}
+
+function getAudienceResponsivenessLabel(value = currentAudienceResponsiveness) {
+  if (value < 35) return "Calm";
+  if (value > 65) return "Reactive";
+  return "Default";
+}
+
+function setAudienceResponsiveness(value) {
+  currentAudienceResponsiveness = clamp(Number(value) || 50, 0, 100);
+  if (audienceResponsiveness) audienceResponsiveness.value = currentAudienceResponsiveness;
+  if (audienceResponsivenessLabel) {
+    audienceResponsivenessLabel.textContent = getAudienceResponsivenessLabel();
+  }
+}
+
+function getAudienceMemoryWeight() {
+  const defaultWeight = isSuperheroAudience() ? 0.38 : AUDIENCE_MEMORY_WEIGHT;
+  const calmWeight = 0.9;
+  const reactiveWeight = isSuperheroAudience() ? 0.22 : 0.5;
+
+  if (currentAudienceResponsiveness <= 50) {
+    const amount = currentAudienceResponsiveness / 50;
+    return calmWeight + (defaultWeight - calmWeight) * amount;
+  }
+
+  const amount = (currentAudienceResponsiveness - 50) / 50;
+  return defaultWeight + (reactiveWeight - defaultWeight) * amount;
 }
 
 function updateAudiencePresentation() {
@@ -2273,12 +2304,16 @@ async function analyzeWithPraat(recordingBlob) {
 }
 
 async function analyzePracticeWithPraat(recordingBlob) {
-  if (currentPracticeSkill !== "volume" || !canUseLocalPraat()) return;
+  const analyzedMode = currentMode;
+  const analyzedSkill = currentPracticeSkill;
+  if (analyzedMode !== "practice" || analyzedSkill !== "volume" || !canUseLocalPraat()) return;
 
   try {
     setRecordingNotice("Browser feedback ready. Checking the take with local Praat...", "active");
     const wavBlob = await convertRecordingToWav(recordingBlob);
     const result = await sendWavToPraat(wavBlob);
+
+    if (currentMode !== analyzedMode || currentPracticeSkill !== analyzedSkill) return;
 
     if (!hasEnoughPraatSpeech(result)) {
       setRecordingNotice("Praat did not find enough clear speech, so browser feedback is shown.", "warning");
@@ -2485,7 +2520,7 @@ function getRecentProsodyResult(windowSeconds = PRAAT_LIVE_WINDOW_SECONDS, elaps
 
 function updateAudienceOverTime(result) {
   const momentScore = clamp(result.score, 0, 100);
-  const memoryWeight = isSuperheroAudience() ? 0.38 : AUDIENCE_MEMORY_WEIGHT;
+  const memoryWeight = getAudienceMemoryWeight();
   audienceAttention = clamp(
     audienceAttention * memoryWeight + momentScore * (1 - memoryWeight),
     0,
@@ -3109,6 +3144,9 @@ audienceTypeInputs.forEach(input => {
     if (input.checked) setAudienceType(input.value);
   });
 });
+audienceResponsiveness?.addEventListener("input", () => {
+  setAudienceResponsiveness(audienceResponsiveness.value);
+});
 practiceSkillInputs.forEach(input => {
   input.addEventListener("change", () => {
     if (input.checked) setPracticeSkill(input.value);
@@ -3130,6 +3168,7 @@ if (navigator.mediaDevices?.addEventListener) {
 setReadingSize("large");
 setScrollMode("auto");
 setAudienceType("duo");
+setAudienceResponsiveness(50);
 setPracticeSkill("pitch");
 setMode("story");
 drawIdleWave();
