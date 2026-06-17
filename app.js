@@ -136,6 +136,7 @@ const audienceResponsivenessLabel = document.querySelector("#audienceResponsiven
 const kids = Array.from(document.querySelectorAll("[data-kid]"));
 const MIN_FEEDBACK_SECONDS = 5;
 const PRAAT_ANALYZE_URL = "http://127.0.0.1:8000/analyze";
+const LOCALHOST_APP_URL = "http://localhost:5173";
 const PRAAT_LIVE_INTERVAL_SECONDS = 5;
 const PRAAT_LIVE_WINDOW_SECONDS = 8;
 const AUDIENCE_UPDATE_SECONDS = 1;
@@ -2016,9 +2017,25 @@ function setRecordingNotice(message, tone = "") {
   if (tone) recordingNotice.classList.add(tone);
 }
 
+function isLocalFilePage() {
+  return window.location.protocol === "file:";
+}
+
+function isLikelySafari() {
+  return /^((?!chrome|android|crios|fxios).)*safari/i.test(navigator.userAgent);
+}
+
+function getLocalFileMicrophoneMessage() {
+  return `Safari blocks microphone recording from local files. Start the local web server and open ${LOCALHOST_APP_URL} instead.`;
+}
+
 function getMicrophoneIssue() {
+  if (isLocalFilePage() && isLikelySafari()) {
+    return getLocalFileMicrophoneMessage();
+  }
+
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    return "This browser is not offering microphone access for this page. Check the browser microphone permission and reopen the page.";
+    return `This browser is not offering microphone access for this page. Open ${LOCALHOST_APP_URL} or check browser microphone permission.`;
   }
 
   if (!window.MediaRecorder) {
@@ -3088,8 +3105,8 @@ async function toggleRecording() {
     await startRecording();
   } catch (error) {
     const message = error.name === "NotAllowedError"
-      ? window.location.protocol === "file:"
-        ? "Microphone permission was blocked for this local page. Allow microphone access for the in-app browser, reopen the page, and try again."
+      ? isLocalFilePage()
+        ? getLocalFileMicrophoneMessage()
         : "Microphone permission was blocked. Allow microphone access in your browser and try again."
       : error.message || "I could not access the microphone. Please allow microphone permission in your browser and try again.";
 
