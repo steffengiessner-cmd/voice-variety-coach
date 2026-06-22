@@ -1324,8 +1324,10 @@ function renderPracticeResultHeader(title, score, summary) {
 }
 
 function getPitchGlideAnalysis(duration) {
+  const speechThreshold = Math.max(getSpeechThreshold(samples), 0.025);
   const points = pitchTimeline
     .filter(point => point.hz >= 70 && point.hz <= 450)
+    .filter(point => (point.rms ?? samples[point.sampleIndex] ?? 0) >= speechThreshold)
     .map(point => ({
       hz: point.hz,
       time: (point.sampleIndex / Math.max(1, samples.length - 1)) * duration
@@ -2826,7 +2828,7 @@ function drawLiveWave() {
   const pitch = estimatePitch(floatData, audioContext.sampleRate, rms);
   if (pitch) {
     pitchReadings.push(pitch);
-    pitchTimeline.push({ hz: pitch, sampleIndex: samples.length - 1 });
+    pitchTimeline.push({ hz: pitch, rms, sampleIndex: samples.length - 1 });
   }
 
   liveFrame += 1;

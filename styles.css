@@ -170,11 +170,11 @@ h3 {
   display: grid;
   min-height: 36px;
   place-items: center;
-  min-height: 36px;
   border-radius: 6px;
   background: transparent;
   color: var(--muted);
   cursor: pointer;
+  font-size: 0.86rem;
   font-weight: 850;
   text-align: center;
   -webkit-tap-highlight-color: transparent;
@@ -293,7 +293,7 @@ body.is-recording .own-text-editor {
   border-radius: 6px;
   color: var(--muted);
   cursor: pointer;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 850;
   text-align: center;
   text-transform: none;
@@ -494,7 +494,7 @@ body.practice-mode .skill-practice {
   border-radius: 6px;
   color: var(--muted);
   cursor: pointer;
-  font-size: 0.82rem;
+  font-size: 0.76rem;
   font-weight: 850;
 }
 
@@ -715,7 +715,7 @@ body.audience-only-mode .audience-choice {
   border-radius: 6px;
   color: var(--muted);
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.74rem;
   font-weight: 850;
   text-align: center;
   -webkit-tap-highlight-color: transparent;
@@ -3741,6 +3741,44 @@ body.practice-mode .practice-feedback-panel.quality-high {
 
   body.reading-size-large .reading-text {
     font-size: 1.28rem;
+  }
+
+  body.is-recording .prompt-card {
+    padding: 10px 12px;
+    margin-bottom: 10px;
+  }
+
+  body.is-recording .prompt-header {
+    margin-bottom: 4px;
+    font-size: 0.68rem;
+  }
+
+  body.is-recording .reading-progress {
+    height: 4px;
+    margin: 6px 0;
+  }
+
+  body.is-recording .reading-text {
+    height: min(118px, 22vh);
+    padding-bottom: 6px;
+    font-size: 1.02rem;
+    line-height: 1.32;
+  }
+
+  body.is-recording.reading-size-small .reading-text {
+    font-size: 0.88rem;
+  }
+
+  body.is-recording.reading-size-medium .reading-text {
+    font-size: 0.96rem;
+  }
+
+  body.is-recording.reading-size-large .reading-text {
+    font-size: 1.02rem;
+  }
+
+  body.is-recording .reading-status {
+    display: none;
   }
 
   .stage-header {
