@@ -1356,16 +1356,52 @@ function getPitchGlideAnalysis(duration) {
   const rangeScore = linearScore(rangeSemitones, 5, 18);
   const score = clamp(rangeScore * 0.62 + shapeScore * 0.38, 0, 100);
 
-  const chartPoints = points
-    .filter((_, index) => index % Math.max(1, Math.floor(points.length / 90)) === 0)
-    .map(point => {
+  const chartPoints = getPitchGlideChartPoints(points, low, high, duration);
+
+  return { low, high, rangeSemitones, startLevel, endLevel, downwardConsistency, shapeScore, score, chartPoints };
+}
+
+function getPitchGlideChartPoints(points, low, high, duration) {
+  const sampledPoints = points.filter((_, index) => index % Math.max(1, Math.floor(points.length / 90)) === 0);
+  const normalized = sampledPoints.map(point => clamp((point.hz - low) / Math.max(1, high - low), 0, 1));
+  const smoothed = smoothValues(normalized, 2);
+  const descending = makeNonIncreasing(smoothed);
+
+  return sampledPoints
+    .map((point, index) => {
       const x = (point.time / Math.max(0.1, duration)) * 100;
-      const y = 94 - clamp((point.hz - low) / Math.max(1, high - low), 0, 1) * 84;
+      const y = 94 - descending[index] * 84;
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     })
     .join(" ");
+}
 
-  return { low, high, rangeSemitones, startLevel, endLevel, downwardConsistency, shapeScore, score, chartPoints };
+function smoothValues(values, radius = 1) {
+  return values.map((_, index) => {
+    const start = Math.max(0, index - radius);
+    const end = Math.min(values.length, index + radius + 1);
+    return mean(values.slice(start, end));
+  });
+}
+
+function makeNonIncreasing(values) {
+  const blocks = [];
+
+  values.forEach(value => {
+    blocks.push({ average: value, count: 1 });
+
+    while (blocks.length >= 2) {
+      const current = blocks[blocks.length - 1];
+      const previous = blocks[blocks.length - 2];
+      if (previous.average >= current.average) break;
+
+      const count = previous.count + current.count;
+      const average = ((previous.average * previous.count) + (current.average * current.count)) / count;
+      blocks.splice(blocks.length - 2, 2, { average, count });
+    }
+  });
+
+  return blocks.flatMap(block => Array.from({ length: block.count }, () => block.average));
 }
 
 function renderPitchPracticeFeedback(duration) {
