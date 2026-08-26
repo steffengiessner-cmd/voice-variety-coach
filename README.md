@@ -43,3 +43,13 @@ In GitHub:
 5. Save.
 
 The online version will use browser-based feedback. To use the local Praat analysis, run the backend helper on your Mac and open the app through `localhost`.
+
+## Dataset Capture
+
+The recording panel includes optional labels for building a calibration dataset: speaker ID, intended variety level, intended tone, and take number. After a recording, click **Export Features** to download a local JSON file with the labels, prompt metadata, browser features, current scores, and optional Praat technical results. The export does not include raw audio.
+
+Starter materials live in:
+
+- `docs/dataset-roadmap.md`
+- `data/starter_corpus.csv`
+- `data/annotation_schema.csv`

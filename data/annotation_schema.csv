@@ -1,0 +1,21 @@
+field,type,required,allowed_values,notes
+clip_id,string,yes,,Stable unique clip identifier.
+speaker_id,string,yes,,Pseudonymous speaker ID such as S001.
+text_id,string,yes,,Matches starter_corpus.csv or later text inventory.
+text_type,categorical,yes,business|story|practice|own,Prompt category.
+intended_variety_level,categorical,yes,low|high|unspecified,Instruction given to speaker.
+intended_tone,categorical,yes,neutral|enthusiastic|determined|compassionate|concerned|playful|unspecified,Instruction given to speaker.
+repetition,integer,yes,,Take number within condition.
+rater_id,string,yes,,Pseudonymous listener/rater ID.
+vocal_variety_1_5,integer,yes,1|2|3|4|5,Overall variation in pitch volume rhythm and emphasis.
+expressiveness_1_5,integer,yes,1|2|3|4|5,How expressive the delivery sounds.
+naturalness_1_5,integer,yes,1|2|3|4|5,Whether the delivery sounds usable rather than acted or forced.
+clarity_1_5,integer,yes,1|2|3|4|5,How easy it is to understand.
+engagement_1_5,integer,yes,1|2|3|4|5,How likely the delivery is to keep attention.
+perceived_tone,categorical,yes,neutral|enthusiastic|determined|compassionate|concerned|playful|other|unclear,What the listener hears.
+tone_match_1_5,integer,no,1|2|3|4|5,How well perceived tone matches intended tone.
+background_noise_1_5,integer,no,1|2|3|4|5,1 means clean and 5 means very noisy.
+clipping_or_distortion,categorical,no,none|minor|major,Audio quality flag.
+reading_error,categorical,no,none|minor|major,Whether the text was skipped or changed.
+rater_confidence_1_5,integer,no,1|2|3|4|5,How confident the rater is.
+comments,string,no,,Short free-text note.

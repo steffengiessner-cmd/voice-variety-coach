@@ -277,6 +277,46 @@
           </select>
           <small>Device names may appear after you allow microphone access.</small>
         </label>
+        <section class="dataset-panel" aria-labelledby="dataset-title">
+          <div class="dataset-panel-header">
+            <div>
+              <p class="eyebrow">Dataset capture</p>
+              <h2 id="dataset-title">Recording labels</h2>
+            </div>
+            <button class="secondary-button compact-button" id="exportFeaturesButton" type="button" disabled>Export Features</button>
+          </div>
+          <div class="dataset-fields">
+            <label for="datasetSpeakerId">
+              <span>Speaker ID</span>
+              <input id="datasetSpeakerId" type="text" placeholder="S001" autocomplete="off" />
+            </label>
+            <label for="datasetVarietyLevel">
+              <span>Variety target</span>
+              <select id="datasetVarietyLevel">
+                <option value="unspecified">Unspecified</option>
+                <option value="low">Low variety</option>
+                <option value="high">High variety</option>
+              </select>
+            </label>
+            <label for="datasetTone">
+              <span>Tone target</span>
+              <select id="datasetTone">
+                <option value="unspecified">Unspecified</option>
+                <option value="neutral">Neutral</option>
+                <option value="enthusiastic">Enthusiastic</option>
+                <option value="determined">Determined</option>
+                <option value="compassionate">Compassionate</option>
+                <option value="concerned">Concerned</option>
+                <option value="playful">Playful</option>
+              </select>
+            </label>
+            <label for="datasetRepetition">
+              <span>Take</span>
+              <input id="datasetRepetition" type="number" min="1" step="1" value="1" />
+            </label>
+          </div>
+          <p class="dataset-status" id="datasetStatus">After a recording, export a local JSON feature file for analysis.</p>
+        </section>
         <p class="recording-notice" id="recordingNotice" aria-live="polite"></p>
         <audio class="playback-audio" id="playbackAudio" controls preload="metadata"></audio>
 

@@ -2621,6 +2621,79 @@ body.business-mode {
   text-transform: none;
 }
 
+.dataset-panel {
+  display: grid;
+  gap: 12px;
+  margin: 12px 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+  background: #f8fbfa;
+}
+
+.dataset-panel-header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dataset-panel-header h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.compact-button {
+  min-height: 36px;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+}
+
+.dataset-fields {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.dataset-fields label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.dataset-fields input,
+.dataset-fields select {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 8px 10px;
+  background: #ffffff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-transform: none;
+}
+
+.dataset-fields input:focus,
+.dataset-fields select:focus {
+  border-color: var(--accent);
+  outline: 2px solid rgba(13, 124, 128, 0.16);
+}
+
+.dataset-status {
+  min-height: 18px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 750;
+  line-height: 1.4;
+}
+
 .primary-button,
 .secondary-button {
   min-height: 48px;
@@ -3708,6 +3781,15 @@ body.practice-mode .practice-feedback-panel.quality-high {
 
   .timer-row {
     grid-template-columns: 1fr;
+  }
+
+  .dataset-panel-header,
+  .dataset-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .dataset-panel-header {
+    display: grid;
   }
 
   .prompt-tools {

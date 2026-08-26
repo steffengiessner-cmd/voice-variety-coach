@@ -107,9 +107,15 @@ const recordingGoal = document.querySelector("#recordingGoal");
 const newPromptButton = document.querySelector("#newPromptButton");
 const recordButton = document.querySelector("#recordButton");
 const playButton = document.querySelector("#playButton");
+const exportFeaturesButton = document.querySelector("#exportFeaturesButton");
 const microphoneSelect = document.querySelector("#microphoneSelect");
 const playbackAudio = document.querySelector("#playbackAudio");
 const recordingNotice = document.querySelector("#recordingNotice");
+const datasetSpeakerId = document.querySelector("#datasetSpeakerId");
+const datasetVarietyLevel = document.querySelector("#datasetVarietyLevel");
+const datasetTone = document.querySelector("#datasetTone");
+const datasetRepetition = document.querySelector("#datasetRepetition");
+const datasetStatus = document.querySelector("#datasetStatus");
 const sessionPill = document.querySelector("#sessionPill");
 const timer = document.querySelector("#timer");
 const waveform = document.querySelector("#waveform");
@@ -179,6 +185,8 @@ let currentMode = "story";
 let currentScrollMode = "auto";
 let currentAudienceType = "duo";
 let currentAudienceResponsiveness = 50;
+let currentPassage = null;
+let latestFeatureExport = null;
 let selectedMicrophoneId = "";
 let liveAudioProcessor;
 let liveMonitorGain;
@@ -504,6 +512,7 @@ function setScrollMode(mode) {
 }
 
 function clearPassage() {
+  currentPassage = null;
   passageTitle.textContent = "Own text";
   readingText.innerHTML = "";
   currentPassageWords = [];
@@ -527,6 +536,7 @@ function normalizeWord(word) {
 }
 
 function renderPassage(passage) {
+  currentPassage = passage;
   passageTitle.textContent = passage.title;
   readingText.innerHTML = "";
   currentPassageWords = [];
@@ -2284,6 +2294,7 @@ function applyPraatAnalysis(result, options = {}) {
   }
 
   const coach = classifyPraatFeedback(result);
+  mergePraatFeatureExport(result, coach);
 
   if (options.finalTechnical) {
     setRecordingNotice("Praat technical check complete. Overall score uses average audience attention across the take.", "success");
@@ -2877,10 +2888,138 @@ function describeLevel(value, lowLabel, midLabel, highLabel) {
   return highLabel;
 }
 
+function slugify(value) {
+  return (value || "recording")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 64) || "recording";
+}
+
+function getPromptExportMetadata() {
+  const practiceTask = practiceTasks[currentPracticeSkill];
+  const practiceText = practiceTask
+    ? [
+        practiceTask.instruction,
+        practiceTask.text,
+        practiceTask.knownText,
+        practiceTask.newText
+      ].filter(Boolean).join(" ")
+    : "";
+  const passageText = currentMode === "practice"
+    ? practiceText
+    : currentMode === "own"
+      ? ownTextInput.value.trim()
+      : currentPassage?.text || "";
+  const title = currentMode === "practice"
+    ? practiceTask?.title || "Practice"
+    : currentPassage?.title || passageTitle.textContent || "Untitled";
+
+  return {
+    mode: currentMode,
+    audienceType: getEffectiveAudienceType(),
+    practiceSkill: currentMode === "practice" ? currentPracticeSkill : null,
+    title,
+    text: passageText,
+    wordCount: passageText.trim() ? passageText.trim().split(/\s+/).length : 0
+  };
+}
+
+function getDatasetLabels() {
+  return {
+    speakerId: datasetSpeakerId?.value.trim() || "",
+    intendedVarietyLevel: datasetVarietyLevel?.value || "unspecified",
+    intendedTone: datasetTone?.value || "unspecified",
+    repetition: Math.max(1, Number.parseInt(datasetRepetition?.value || "1", 10) || 1)
+  };
+}
+
+function getSelectedMicrophoneLabel() {
+  const option = microphoneSelect?.selectedOptions?.[0];
+  return option?.textContent || "Default microphone";
+}
+
+function buildFeatureExport(browserResult, duration) {
+  const capturedAt = new Date().toISOString();
+  const prompt = getPromptExportMetadata();
+
+  return {
+    schemaVersion: "voice-variety-feature-export-v1",
+    capturedAt,
+    labels: getDatasetLabels(),
+    prompt,
+    recording: {
+      durationSeconds: duration,
+      rmsFrameCount: samples.length,
+      pitchReadingCount: pitchReadings.length,
+      pitchTimelineCount: pitchTimeline.length,
+      recordedMimeType,
+      microphoneLabel: getSelectedMicrophoneLabel()
+    },
+    browser: browserResult,
+    praat: null,
+    notes: {
+      rawAudioIncluded: false,
+      scoringBehaviorChanged: false,
+      volumeCalibration: "Microphone level is not calibrated to room loudness."
+    }
+  };
+}
+
+function setLatestFeatureExport(browserResult, duration) {
+  latestFeatureExport = buildFeatureExport(browserResult, duration);
+  if (exportFeaturesButton) exportFeaturesButton.disabled = false;
+  if (datasetStatus) {
+    datasetStatus.textContent = `Feature export ready for ${latestFeatureExport.prompt.title}.`;
+  }
+}
+
+function mergePraatFeatureExport(result, coach) {
+  if (!latestFeatureExport) return;
+  latestFeatureExport.praat = {
+    result,
+    coach
+  };
+  if (datasetStatus) {
+    datasetStatus.textContent = `Feature export ready with Praat check for ${latestFeatureExport.prompt.title}.`;
+  }
+}
+
+function downloadLatestFeatureExport() {
+  if (!latestFeatureExport) {
+    if (datasetStatus) datasetStatus.textContent = "Record a take before exporting features.";
+    return;
+  }
+
+  const labels = latestFeatureExport.labels;
+  const filenameParts = [
+    labels.speakerId || "speaker",
+    latestFeatureExport.prompt.mode,
+    latestFeatureExport.prompt.practiceSkill || latestFeatureExport.prompt.title,
+    labels.intendedVarietyLevel,
+    labels.intendedTone,
+    `take-${labels.repetition}`,
+    latestFeatureExport.capturedAt.slice(0, 19)
+  ];
+  const filename = `${slugify(filenameParts.join("-"))}.json`;
+  const blob = new Blob([JSON.stringify(latestFeatureExport, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  if (datasetStatus) datasetStatus.textContent = `Exported ${filename}.`;
+}
+
 function analyzeRecording() {
   const duration = Math.max(1, getElapsedSeconds());
 
   if (currentMode === "practice") {
+    const practiceResult = analyzeProsody(samples, pitchReadings, duration);
+    setLatestFeatureExport(practiceResult, duration);
     analyzePracticeRecording(duration);
     return;
   }
@@ -2905,6 +3044,7 @@ function analyzeRecording() {
   }
 
   const wholeResult = analyzeProsody(samples, pitchReadings, duration);
+  setLatestFeatureExport(wholeResult, duration);
 
   if (!hasEnoughSpeech(wholeResult)) {
     showNoSpeechDetected();
@@ -3062,6 +3202,9 @@ async function startRecording() {
   recordButton.classList.add("recording");
   microphoneSelect.disabled = true;
   playButton.disabled = true;
+  if (exportFeaturesButton) exportFeaturesButton.disabled = true;
+  latestFeatureExport = null;
+  if (datasetStatus) datasetStatus.textContent = "Recording labels will be attached to the next feature export.";
   if (currentMode === "practice") {
     const task = practiceTasks[currentPracticeSkill];
     setRecordingNotice(`Recording ${task.title.toLowerCase()}. Complete the exercise, then stop.`, "active");
@@ -3212,6 +3355,7 @@ metricDetailButtons.forEach(button => {
 });
 recordButton.addEventListener("click", toggleRecording);
 playButton.addEventListener("click", playRecording);
+exportFeaturesButton?.addEventListener("click", downloadLatestFeatureExport);
 microphoneSelect.addEventListener("change", () => {
   selectedMicrophoneId = microphoneSelect.value;
 });
