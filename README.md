@@ -56,7 +56,7 @@ Starter materials live in:
 
 ## Leading with Presence companion
 
-The app now starts in **Explore** mode, with optional recording and no scores or simulated audience reactions. Choose an intention and practise one skill. The optional “Add Toolbox preparation” button reveals four plain-language body-and-breath steps; it starts off and requires no prior book or training experience. The Practice tab includes emphasis (Exercise 5.8.1) and vocal colour (Exercise 5.10.3), with book references and reflection prompts.
+The app starts with **Acoustic feedback and simulated audience** enabled. Optional **Explore** mode keeps the audience visible without scores or reactions. The audience also stays visible during focused exercises. Choose an intention and practise one skill. The optional “Add Toolbox preparation” button reveals four plain-language body-and-breath steps; it starts off and requires no prior book or training experience. The Practice tab includes emphasis (Exercise 5.8.1) and vocal colour (Exercise 5.10.3), with book references and reflection prompts.
 
 The two latest recordings can be played side by side in the reflection panel. They and the written reflections are kept only for the current page session, not saved across reloads. Clear recordings removes the retained takes. Use the transfer prompt to plan one real conversation, and ask a buddy what message they received.
 

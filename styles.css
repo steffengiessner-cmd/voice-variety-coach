@@ -205,7 +205,6 @@ body.audience-only-mode .prompt-card {
   display: none;
 }
 
-body.practice-mode .audience-stage,
 body.practice-mode .prompt-header,
 body.practice-mode .reading-progress,
 body.practice-mode .own-text-editor,
@@ -4025,10 +4024,12 @@ body.practice-mode .practice-feedback-panel.quality-high {
 .practice-skill-switch { flex-wrap: wrap; }
 #presenceLine mark { background: #f6d98a; color: #213b3c; border-radius: 4px; }
 .explore-mode .score-ring, .explore-mode .metrics, .explore-mode .metric-detail-panel,
-.explore-mode .vocal-colour-panel, .explore-mode .feedback-box, .explore-mode .practice-feedback-panel,
-.explore-mode .audience-stage, .explore-mode .simulation-note { display: none !important; }
+.explore-mode .vocal-colour-panel, .explore-mode .feedback-box, .explore-mode .practice-feedback-panel { display: none !important; }
 .vocal-colour-grid { display: none; }
 .deliberate-pauses .metrics article:has([data-detail-metric="pauses"]) { display: none; }
 .practice-mode:has(#presenceChoice) .practice-feedback-panel { display: none; }
 
 .explore-mode .dataset-panel { display: none; }
+
+.explore-mode .attention-meter, .explore-mode .audience-responsiveness,
+.practice-mode .attention-meter, .practice-mode .audience-responsiveness { display: none; }
