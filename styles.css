@@ -4033,3 +4033,7 @@ body.practice-mode .practice-feedback-panel.quality-high {
 
 .explore-mode .attention-meter, .explore-mode .audience-responsiveness,
 .practice-mode .attention-meter, .practice-mode .audience-responsiveness { display: none; }
+
+.practice-reflection-options { margin: 14px 0; }
+.practice-reflection-options > summary { cursor: pointer; color: var(--accent-dark); font-weight: 600; padding: 10px 0; }
+.is-recording .practice-reflection-options { display: none; }

@@ -3291,6 +3291,7 @@ async function toggleRecording() {
     return;
   }
 
+  document.querySelector("#practiceReflectionOptions").open = false;
   try {
     await startRecording();
   } catch (error) {

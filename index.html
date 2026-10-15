@@ -17,8 +17,9 @@
           <div class="session-pill" id="sessionPill">Ready</div>
         </div>
 
-        <section class="presence-card" aria-labelledby="presenceTitle">
-          <h2 id="presenceTitle">Practise and reflect</h2>
+        <details id="practiceReflectionOptions" class="practice-reflection-options">
+          <summary>Practise and reflect (optional)</summary>
+        <section class="presence-card" aria-label="Practise and reflect">
           <p>Explore what your voice can do, then choose what serves your listener.</p>
           <p id="toolboxDescription">Optional: the Toolbox is a short body-and-breath preparation from <em>Leading with Presence</em>. No book or training experience is needed.</p>
           <button id="toolboxToggle" class="secondary-button" type="button" aria-expanded="false" aria-controls="toolboxPreparation" aria-describedby="toolboxDescription">Add Toolbox preparation</button>
@@ -40,6 +41,7 @@
           <p>You can practise without recording. Record only when you want to listen back.</p>
           <label class="pause-choice"><input type="checkbox" id="intentionalPauses" checked /> I am practising deliberate pauses (no pause score)</label>
         </section>
+        </details>
 
         <fieldset class="mode-switch" aria-label="Practice mode">
           <legend>Practice mode</legend>
