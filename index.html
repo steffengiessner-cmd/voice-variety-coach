@@ -4,18 +4,42 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Voice Variety Coach</title>
-    <link rel="stylesheet" href="styles.css?v=mobile-recording-20260622" />
+    <link rel="stylesheet" href="styles.css?v=presence-companion-20261015" />
   </head>
-  <body>
+  <body class="explore-mode">
     <main class="app-shell">
       <section class="practice-panel" aria-labelledby="app-title">
         <div class="top-bar">
           <div>
-            <p class="eyebrow">Practice studio</p>
+            <p class="eyebrow">A companion to Leading with Presence</p>
             <h1 id="app-title">Voice Variety Coach</h1>
           </div>
           <div class="session-pill" id="sessionPill">Ready</div>
         </div>
+
+        <section class="presence-card" aria-labelledby="presenceTitle">
+          <h2 id="presenceTitle">Practise and reflect</h2>
+          <p>Explore what your voice can do, then choose what serves your listener.</p>
+          <p id="toolboxDescription">Optional: the Toolbox is a short body-and-breath preparation from <em>Leading with Presence</em>. No book or training experience is needed.</p>
+          <button id="toolboxToggle" class="secondary-button" type="button" aria-expanded="false" aria-controls="toolboxPreparation" aria-describedby="toolboxDescription">Add Toolbox preparation</button>
+          <div id="toolboxPreparation" hidden>
+            <h3>Get ready to speak</h3>
+            <p>Take a comfortable moment for each step. You can sit or stand.</p>
+            <ol>
+              <li><strong>Feel supported (grounding):</strong> Notice your feet resting on the floor and, if seated, the chair supporting you.</li>
+              <li><strong>Find an easy posture (aligning):</strong> Sit or stand comfortably upright. Let your shoulders relax without holding yourself stiffly.</li>
+              <li><strong>Take an easy breath (breathing):</strong> Let your breath come and go naturally. Notice any effort you can release.</li>
+              <li><strong>Think of your listener (connecting):</strong> Picture the person you are speaking to and what you want to share with them.</li>
+            </ol>
+            <small>Adapted from Chapter 4, p. 90. Keep it comfortable and skip anything that does not suit you.</small>
+          </div>
+          <label for="presenceIntention">What do you want your listener to take away?</label>
+          <input id="presenceIntention" type="text" maxlength="240" placeholder="For example: feel reassured about the next step" />
+          <label for="feedbackMode">Practice feedback</label>
+          <select id="feedbackMode"><option value="explore">Explore — no scores or audience reactions</option><option value="measure">Acoustic feedback and simulated audience</option></select>
+          <p>You can practise without recording. Record only when you want to listen back.</p>
+          <label class="pause-choice"><input type="checkbox" id="intentionalPauses" checked /> I am practising deliberate pauses (no pause score)</label>
+        </section>
 
         <fieldset class="mode-switch" aria-label="Practice mode">
           <legend>Practice mode</legend>
@@ -72,6 +96,8 @@
                 <label for="practiceVolume">Volume</label>
                 <input id="practiceTempo" name="practiceSkill" type="radio" value="tempo" />
                 <label for="practiceTempo">Tempo</label>
+                <input id="practiceEmphasis" name="practiceSkill" type="radio" value="emphasis" /><label for="practiceEmphasis">Emphasis</label>
+                <input id="practiceColour" name="practiceSkill" type="radio" value="colour" /><label for="practiceColour">Vocal colour</label>
               </fieldset>
             </div>
             <div class="practice-task-card" id="practiceTaskCard"></div>
@@ -87,14 +113,15 @@
           <p class="reading-status" id="readingStatus" aria-live="polite">Ready to follow your reading.</p>
         </div>
 
+        <p class="simulation-note">Audience reactions are a practice simulation based on sound patterns, not evidence of how real listeners feel.</p>
         <section class="audience-stage" id="audienceStage" aria-labelledby="audience-title">
           <div class="stage-header">
             <div>
-              <p class="eyebrow">Live audience</p>
+              <p class="eyebrow">Simulated audience</p>
               <h2 id="audience-title">Classroom</h2>
             </div>
             <div class="audience-controls">
-              <div class="attention-meter" aria-label="Audience attention">
+              <div class="attention-meter" aria-label="Simulated audience response">
                 <span id="attentionLabel">Warming up</span>
                 <div class="meter-track">
                   <div id="attentionMeter"></div>
@@ -335,7 +362,19 @@
       </section>
 
       <aside class="coach-panel" aria-labelledby="coach-title">
-        <h2 id="coach-title">Coach Feedback</h2>
+        <h2 id="coach-title">Listen and reflect</h2>
+        <section class="presence-card" aria-labelledby="compareTitle">
+          <h3 id="compareTitle">Compare your takes</h3>
+          <p id="takeHelp">Your latest two recordings stay here until you close or reload this page. Recording is optional.</p>
+          <div id="takeComparison"></div>
+          <button type="button" class="secondary-button" id="clearTakes">Clear recordings</button>
+          <label for="presenceReflection">What changed in your voice, body, and message?</label>
+          <textarea id="presenceReflection" rows="3" placeholder="Listen with curiosity. Which take better serves your intention?"></textarea>
+          <label for="presenceTransfer">Where will you try this in daily life?</label>
+          <input id="presenceTransfer" type="text" placeholder="When…, I will…" />
+          <p>With a buddy: ask what message they received, what worked, and one thing to try next. Notes stay on this page only.</p>
+          <small>Based on Chapters 5 and 7: exploration, buddy feedback, and practice intentions.</small>
+        </section>
         <section class="practice-feedback-panel" id="practiceFeedbackPanel" aria-live="polite">
           <div class="practice-feedback-empty">
             Choose an exercise, record it, and your focused feedback will appear here.
@@ -384,7 +423,7 @@
           </article>
           <article>
             <div class="metric-heading">
-              <span>Articulation / clarity</span>
+              <span>Recording signal</span>
               <button class="metric-detail-button" type="button" data-detail-metric="clarity" aria-label="Show clarity details">Details</button>
             </div>
             <strong id="clarityMetric">--</strong>
@@ -397,7 +436,7 @@
 
         <section class="vocal-colour-panel" aria-labelledby="vocal-colour-title">
           <div class="vocal-colour-header">
-            <h3 id="vocal-colour-title">Vocal Colour</h3>
+            <h3 id="vocal-colour-title">Vocal colour practice</h3>
             <span>Prototype</span>
           </div>
           <div class="vocal-colour-grid">
@@ -435,6 +474,6 @@
       </p>
     </footer>
 
-    <script src="app.js?v=mobile-recording-20260622"></script>
+    <script src="app.js?v=presence-companion-20261015"></script>
   </body>
 </html>

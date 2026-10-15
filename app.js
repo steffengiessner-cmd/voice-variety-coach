@@ -66,6 +66,8 @@ This will feel different at first. Some of us will need to step back, and others
 };
 
 const practiceTasks = {
+  emphasis: { title: "One sentence, different meanings", definition: "Emphasis directs attention and changes meaning.", instruction: "Choose a word below. Say the sentence with that word emphasized, then choose another word and record a second take. How did the meaning change?", text: "I didn’t say you were wrong.", goal: "One sentence" },
+  colour: { title: "One sentence, three intentions", definition: "Vocal colour expresses your intention toward a listener.", instruction: "Imagine a specific listener and situation. Say the sentence with your chosen intention. Try another colour and compare what you hear and feel.", text: "I will be away for two weeks.", goal: "One sentence" },
   pitch: {
     title: "Pitch glide",
     definition: "Pitch is how high or low your voice sounds.",
@@ -211,6 +213,8 @@ function renderPracticeTask() {
   if (!practiceTaskCard) return;
   const task = practiceTasks[currentPracticeSkill];
   recordingGoal.textContent = task.goal;
+
+  if (renderPresenceExercise()) return;
 
   if (currentPracticeSkill === "pitch") {
     practiceTaskCard.innerHTML = `
@@ -1745,14 +1749,8 @@ function describeColourScore(score) {
   return `Strong: ${Math.round(score)}%`;
 }
 
-function updateVocalColour(colour) {
-  determinationMetric.textContent = describeColourScore(colour.determination);
-  compassionMetric.textContent = describeColourScore(colour.compassion);
-  enthusiasmMetric.textContent = describeColourScore(colour.enthusiasm);
-  setQuality(determinationMetric, colour.determination);
-  setQuality(compassionMetric, colour.compassion);
-  setQuality(enthusiasmMetric, colour.enthusiasm);
-  vocalColourText.textContent = colour.feedback;
+function updateVocalColour() {
+  resetVocalColour("Choose enthusiasm, determination, or compassion in Practice. Compare recordings and ask a listener what came across; sound patterns alone do not establish emotion.");
 }
 
 function resetVocalColour(message = "This first version is a rule-based estimate. A trained model can be added later.") {
@@ -1929,8 +1927,8 @@ function classifyPraatFeedback(result) {
   let pauseScore = 34;
   let pauseLabel = "Needs clearer pauses";
   if (longPauseCount > 0) {
-    pauseScore = 48;
-    pauseLabel = "One pause may be too long";
+    pauseScore = 84;
+    pauseLabel = "Long pause: reflect on its purpose";
   } else if (pauseCount > 0 && pausesPerMinute <= 12) {
     pauseScore = 84;
     pauseLabel = "Good pause shape";
@@ -2297,7 +2295,7 @@ function applyPraatAnalysis(result, options = {}) {
   mergePraatFeatureExport(result, coach);
 
   if (options.finalTechnical) {
-    setRecordingNotice("Praat technical check complete. Overall score uses average audience attention across the take.", "success");
+    setRecordingNotice("Praat technical check complete. The score summarizes simulated responses, not real audience attention.", "success");
     return;
   }
 
@@ -2490,6 +2488,7 @@ async function analyzeLiveWithPraat() {
 }
 
 function startLivePraatAnalysis() {
+  if (isReflectivePractice()) return;
   if (!canUseLocalPraat()) return;
 
   resetLivePraatBuffers();
@@ -2709,7 +2708,7 @@ function analyzeProsody(rmsValues, pitches, duration) {
   const speechRunScore = bandScore(averageSpeechRun, 1.4, 4.8, 0.4, 9);
   const pauseFrequencyScore = bandScore(pausesPerMinute, 3, 9, 0, 16);
   const pauseVariationScore = strategicPauses.length >= 2 ? linearScore(pauseVariation, 0.12, 0.75) : 28;
-  const longPausePenalty = Math.min(30, longPauses.length * 10);
+  const longPausePenalty = 0; // Duration alone does not establish whether a pause served the message.
   const tempoScore = clamp(
     speechRatioScore * 0.62 + speechRunScore * 0.38,
     0,
@@ -2745,7 +2744,7 @@ function analyzeProsody(rmsValues, pitches, duration) {
     100
   );
 
-  const pacingScore = tempoScore * 0.58 + pauseScore * 0.42;
+  const pacingScore = document.querySelector("#intentionalPauses").checked ? tempoScore : tempoScore * 0.58 + pauseScore * 0.42;
   let score = pitchScore * 0.36 + energyScore * 0.24 + pacingScore * 0.22 + emphasisScore * 0.12 + clarityScore * 0.06;
 
   if (pitchScore < 45 && energyScore < 45) {
@@ -2843,7 +2842,7 @@ function drawLiveWave() {
   }
 
   liveFrame += 1;
-  if (currentMode !== "practice" && liveFrame % 8 === 0) {
+  if (!isReflectivePractice() && currentMode !== "practice" && liveFrame % 8 === 0) {
     const elapsedSeconds = getElapsedSeconds();
     if (elapsedSeconds < MIN_FEEDBACK_SECONDS) {
       updateListeningPeriod(elapsedSeconds);
@@ -3015,6 +3014,11 @@ function downloadLatestFeatureExport() {
 }
 
 function analyzeRecording() {
+  if (isReflectivePractice()) {
+    resetPracticeFeedback("Listen to your take. Did the intended meaning or feeling come across? Compare another take or ask a buddy.");
+    feedbackText.textContent = "Notice what changed and choose one thing to explore next.";
+    return;
+  }
   const duration = Math.max(1, getElapsedSeconds());
 
   if (currentMode === "practice") {
@@ -3122,7 +3126,7 @@ function analyzeRecording() {
   updateVocalColour(vocalColourFromBrowserResult(result));
 
   if (result.score >= 78) {
-    feedbackText.textContent = "On average, the audience stayed with you. Keep the shape, and now practice making the most important sentence even more deliberate.";
+    feedbackText.textContent = "The simulation responded to your vocal contrast. Ask a listener whether the message landed. Keep the shape, and now practice making the most important sentence even more deliberate.";
   } else if (result.pitchScore < 45 && result.energyScore < 45) {
     feedbackText.textContent = "Across the take, this sounded fairly monotone: both pitch and volume stayed narrow. Try choosing three key words and lifting either the pitch or volume on each one.";
   } else if (result.pitchScore < 45) {
@@ -3195,6 +3199,7 @@ async function startRecording() {
   updateTimer();
   drawLiveWave();
 
+  lockPresenceControls(true);
   sessionPill.textContent = "Recording";
   sessionPill.classList.add("recording");
   document.body.classList.add("is-recording");
@@ -3210,15 +3215,16 @@ async function startRecording() {
     setRecordingNotice(`Recording ${task.title.toLowerCase()}. Complete the exercise, then stop.`, "active");
     feedbackText.textContent = task.instruction;
   } else {
-    setRecordingNotice("Recording. The audience will listen first, then average its attention over time.", "active");
+    setRecordingNotice("Recording. The audience simulation responds to sound patterns over time.", "active");
     feedbackText.textContent = currentMode === "own"
       ? "Speak freely. After 5 seconds, the audience will react gradually and the final score will reflect the whole take."
-      : "The audience is listening first. After 5 seconds, they will react gradually and the final score will reflect the whole take.";
+      : "The audience simulation is starting. After 5 seconds, they will react gradually and the final score will reflect the whole take.";
     updateListeningPeriod(0);
   }
 }
 
 async function cleanupFailedRecordingStart() {
+  lockPresenceControls(false);
   clearInterval(timerInterval);
   cancelAnimationFrame(animationFrame);
   stopLivePraatAnalysis();
@@ -3261,6 +3267,7 @@ function finishRecording() {
   playbackAudio.load();
   playButton.disabled = false;
 
+  lockPresenceControls(false);
   sessionPill.textContent = "Complete";
   sessionPill.classList.remove("recording");
   document.body.classList.remove("is-recording");
@@ -3268,7 +3275,9 @@ function finishRecording() {
   recordButton.classList.remove("recording");
   microphoneSelect.disabled = false;
   setRecordingNotice("Recording complete. Play it back or try another take.", "success");
+  rememberPresenceTake(blob);
   analyzeRecording();
+  if (isReflectivePractice()) { setRecordingNotice("Take saved. Compare your recordings and reflect on your intention.", "success"); return; }
   if (currentMode === "practice") {
     analyzePracticeWithPraat(blob);
   } else {
@@ -3379,3 +3388,89 @@ if (firstMicrophoneIssue) {
 } else {
   setRecordingNotice("Ready. Press Start Recording and allow microphone access.", "active");
 }
+
+// Book companion: reflection is separate from acoustic scoring.
+function isReflectivePractice() {
+  return document.querySelector('#feedbackMode').value === 'explore' ||
+    (currentMode === 'practice' && ['emphasis', 'colour'].includes(currentPracticeSkill));
+}
+function lockPresenceControls(locked) {
+  document.querySelectorAll('#feedbackMode, #intentionalPauses, #presenceIntention, [name="practiceMode"], [name="practiceSkill"], #presenceChoice, #newPromptButton, #clearTakes').forEach(el => el.disabled = locked);
+}
+function renderPresenceExercise() {
+  if (!['emphasis', 'colour'].includes(currentPracticeSkill)) return false;
+  const task = practiceTasks[currentPracticeSkill];
+  practiceTaskCard.innerHTML = `<h3>${task.title}</h3><p>${task.definition} ${task.instruction}</p>
+    <label for="presenceChoice">${currentPracticeSkill === 'emphasis' ? 'Word to emphasize' : 'Intention'}</label>
+    <select id="presenceChoice"></select><blockquote class="practice-reading-line" id="presenceLine"></blockquote>
+    <p id="presenceCue"></p><small>Adapted from Leading with Presence, ${currentPracticeSkill === 'emphasis' ? 'Exercise 5.8.1, p. 203' : 'Exercise 5.10.3, pp. 216–217'}. Explore comfortably; no emotion or meaning score is assigned.</small>`;
+  const choice = document.querySelector('#presenceChoice');
+  const values = currentPracticeSkill === 'emphasis' ? task.text.split(' ') : ['Enthusiasm', 'Determination', 'Compassion'];
+  values.forEach(value => choice.add(new Option(value, value)));
+  const refresh = () => {
+    const line = document.querySelector('#presenceLine');
+    line.replaceChildren();
+    if (currentPracticeSkill === 'emphasis') {
+      task.text.split(' ').forEach(word => {
+        const span = document.createElement(word === choice.value ? 'mark' : 'span');
+        span.textContent = word + ' '; line.append(span);
+      });
+      document.querySelector('#presenceCue').textContent = 'Try changing pitch, length, or volume on the selected word. What does your listener now understand?';
+    } else {
+      line.textContent = task.text;
+      document.querySelector('#presenceCue').textContent = {
+        Enthusiasm: 'Imagine sharing news of a holiday you are looking forward to. Notice the energy in your body before speaking.',
+        Determination: 'Imagine calmly holding a boundary about time you have agreed to take away. Stay open and connected.',
+        Compassion: 'Imagine reassuring someone who will miss you. Bring that person to mind and allow warmth into your delivery.'
+      }[choice.value];
+    }
+  };
+  choice.addEventListener('change', refresh); refresh();
+  return true;
+}
+const presenceTakes = [];
+let presenceTakeNumber = 0;
+function rememberPresenceTake(blob) {
+  const take = { url: URL.createObjectURL(blob), number: ++presenceTakeNumber,
+    label: currentMode === 'practice' ? practiceTasks[currentPracticeSkill].title : passageTitle.textContent,
+    choice: currentMode === 'practice' ? document.querySelector('#presenceChoice')?.value || '' : '',
+    intention: document.querySelector('#presenceIntention').value.trim(),
+    duration: formatTime(Math.max(0, getElapsedSeconds())) };
+  presenceTakes.push(take);
+  if (presenceTakes.length > 2) URL.revokeObjectURL(presenceTakes.shift().url);
+  renderPresenceTakes();
+}
+function renderPresenceTakes() {
+  const container = document.querySelector('#takeComparison'); container.replaceChildren();
+  presenceTakes.forEach(take => {
+    const card = document.createElement('article');
+    const title = document.createElement('p');
+    title.textContent = `Take ${take.number} · ${take.duration} · ${take.label}${take.choice ? ' · ' + take.choice : ''}`;
+    const intention = document.createElement('p'); intention.textContent = take.intention ? `Intention: ${take.intention}` : 'Listen for the effect on your message.';
+    const audio = document.createElement('audio'); audio.controls = true; audio.src = take.url; audio.setAttribute('aria-label', `Play take ${take.number}`);
+    card.append(title, intention, audio); container.append(card);
+  });
+}
+function refreshPresenceMode() {
+  document.body.classList.toggle('explore-mode', document.querySelector('#feedbackMode').value === 'explore');
+  document.body.classList.toggle('deliberate-pauses', document.querySelector('#intentionalPauses').checked);
+  resetAudience();
+}
+document.querySelector('#feedbackMode').addEventListener('change', refreshPresenceMode);
+document.querySelector('#intentionalPauses').addEventListener('change', refreshPresenceMode);
+document.querySelector('#clearTakes').addEventListener('click', () => {
+  presenceTakes.forEach(take => URL.revokeObjectURL(take.url)); presenceTakes.length = 0;
+  if (audioUrl) URL.revokeObjectURL(audioUrl); audioUrl = null;
+  playbackAudio.pause(); playbackAudio.removeAttribute('src'); playbackAudio.load();
+  playButton.disabled = true; chunks = []; recordingPcmChunks = [];
+  renderPresenceTakes();
+});
+refreshPresenceMode();
+
+// Toolbox preparation is opt-in for this practice session.
+document.querySelector('#toolboxToggle').addEventListener('click', event => {
+  const panel = document.querySelector('#toolboxPreparation');
+  panel.hidden = !panel.hidden;
+  event.currentTarget.setAttribute('aria-expanded', String(!panel.hidden));
+  event.currentTarget.textContent = panel.hidden ? 'Add Toolbox preparation' : 'Remove Toolbox preparation';
+});

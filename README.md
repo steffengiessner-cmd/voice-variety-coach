@@ -53,3 +53,11 @@ Starter materials live in:
 - `docs/dataset-roadmap.md`
 - `data/starter_corpus.csv`
 - `data/annotation_schema.csv`
+
+## Leading with Presence companion
+
+The app now starts in **Explore** mode, with optional recording and no scores or simulated audience reactions. Choose an intention and practise one skill. The optional “Add Toolbox preparation” button reveals four plain-language body-and-breath steps; it starts off and requires no prior book or training experience. The Practice tab includes emphasis (Exercise 5.8.1) and vocal colour (Exercise 5.10.3), with book references and reflection prompts.
+
+The two latest recordings can be played side by side in the reflection panel. They and the written reflections are kept only for the current page session, not saved across reloads. Clear recordings removes the retained takes. Use the transfer prompt to plan one real conversation, and ask a buddy what message they received.
+
+Acoustic feedback remains available as an option. Audience reactions are explicitly a simulation, and vocal-colour percentages are no longer displayed. Deliberate-pause practice is enabled by default: the browser excludes the pause score from its pacing blend and hides the pause metric. Pause duration alone no longer triggers the former long-pause deduction. Other acoustic heuristics and the optional local Praat helper remain experimental; they do not measure communicative success or real listener engagement.

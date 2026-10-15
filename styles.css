@@ -2791,7 +2791,7 @@ canvas {
   display: none;
 }
 
-body.practice-mode .coach-panel > :not(h2):not(.practice-feedback-panel) {
+body.practice-mode .coach-panel > :not(h2):not(.practice-feedback-panel):not(.presence-card) {
   display: none;
 }
 
@@ -4011,3 +4011,24 @@ body.practice-mode .practice-feedback-panel.quality-high {
     width: 100%;
   }
 }
+
+/* Leading with Presence companion */
+.presence-card { margin: 18px 0; padding: 20px; border: 1px solid #c7dcd7; border-radius: 18px; background: #f4f8f5; color: #213b3c; }
+.presence-card h2, .presence-card h3 { margin: 0 0 10px; }
+.presence-card p, .presence-card li { line-height: 1.6; }
+.presence-card label:not(.pause-choice) { display: block; margin: 16px 0 7px; font-weight: 600; }
+.presence-card input[type="text"], .presence-card select, .presence-card textarea, #presenceChoice { width: 100%; padding: 11px; border: 1px solid #a8bfba; border-radius: 8px; font: inherit; background: white; color: #213b3c; box-sizing: border-box; }
+.presence-card summary { cursor: pointer; font-weight: 700; padding: 10px 0; }
+.presence-card audio { width: 100%; }
+.presence-card article { border-bottom: 1px solid #c7dcd7; padding-bottom: 14px; }
+.simulation-note { font-size: .85rem; line-height: 1.5; color: #4b6263; }
+.practice-skill-switch { flex-wrap: wrap; }
+#presenceLine mark { background: #f6d98a; color: #213b3c; border-radius: 4px; }
+.explore-mode .score-ring, .explore-mode .metrics, .explore-mode .metric-detail-panel,
+.explore-mode .vocal-colour-panel, .explore-mode .feedback-box, .explore-mode .practice-feedback-panel,
+.explore-mode .audience-stage, .explore-mode .simulation-note { display: none !important; }
+.vocal-colour-grid { display: none; }
+.deliberate-pauses .metrics article:has([data-detail-metric="pauses"]) { display: none; }
+.practice-mode:has(#presenceChoice) .practice-feedback-panel { display: none; }
+
+.explore-mode .dataset-panel { display: none; }
