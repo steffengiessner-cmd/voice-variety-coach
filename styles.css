@@ -4042,12 +4042,18 @@ body.practice-mode .practice-feedback-panel.quality-high {
 .visual-feedback-choice label { font-weight: 600; }
 .visual-feedback-choice select { font: inherit; padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; background: white; color: var(--ink); }
 .variety-box { padding: 28px 20px; min-height: 200px; border: 1px solid #b9c9c7; border-radius: 16px; text-align: center; background: #e4eae8; color: #17212b; transition: background-color 800ms ease; margin-bottom: 18px; }
-.variety-box h2 { margin: 0 0 16px; font-size: 1rem; }
-.variety-box strong { display: block; font-size: clamp(1.4rem, 4vw, 2rem); }
-.variety-box p { line-height: 1.5; }
+.variety-box-copy h2 { margin: 0 0 16px; font-size: 1rem; }
+.variety-box-copy strong { display: block; font-size: clamp(1.4rem, 4vw, 2rem); }
+.variety-box-copy p { line-height: 1.5; }
 body[data-visual-feedback="colour"] .audience-stage,
 body[data-visual-feedback="colour"] .simulation-note,
 body[data-visual-feedback="audience"] .variety-box,
 body.practice-mode .audience-stage, body.practice-mode .simulation-note,
 body.practice-mode .variety-box, body.practice-mode .visual-feedback-choice { display: none !important; }
 @media (prefers-reduced-motion: reduce) { .variety-box { transition: none; } }
+
+.variety-box-copy { margin: 0 0 14px; text-align: center; }
+body[data-visual-feedback="audience"] .variety-box-copy,
+body.practice-mode .variety-box-copy { display: none; }
+/* Keep the live status accessible while leaving only colour on screen. */
+body.is-recording .variety-box-copy { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

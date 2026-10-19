@@ -119,12 +119,13 @@
           <label for="visualFeedback">Live feedback display</label>
           <select id="visualFeedback"><option value="colour">Colour box</option><option value="audience">Animated audience</option></select>
         </div>
-        <section id="varietyBox" class="variety-box" aria-labelledby="varietyBoxTitle">
+        <div class="variety-box-copy">
           <h2 id="varietyBoxTitle">Vocal variety</h2>
           <strong id="varietyBoxStatus" role="status">Ready to listen</strong>
           <p>Red = low variety · Amber = moderate variety · Green = high variety</p>
           <small>Live feedback from pitch, volume, and pacing. Variety is one part of communication.</small>
-        </section>
+        </div>
+        <div id="varietyBox" class="variety-box" role="img" aria-label="Live vocal variety colour indicator" aria-describedby="varietyBoxStatus"></div>
         <p class="simulation-note">Audience reactions are a practice simulation based on sound patterns, not evidence of how real listeners feel.</p>
         <section class="audience-stage" id="audienceStage" aria-labelledby="audience-title">
           <div class="stage-header">
