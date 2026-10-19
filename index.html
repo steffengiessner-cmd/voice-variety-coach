@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Voice Variety Coach</title>
-    <link rel="stylesheet" href="styles.css?v=presence-companion-20261015" />
+    <link rel="stylesheet" href="styles.css?v=colour-feedback-20261019" />
   </head>
   <body>
     <main class="app-shell">
@@ -115,6 +115,16 @@
           <p class="reading-status" id="readingStatus" aria-live="polite">Ready to follow your reading.</p>
         </div>
 
+        <div class="visual-feedback-choice">
+          <label for="visualFeedback">Live feedback display</label>
+          <select id="visualFeedback"><option value="colour">Colour box</option><option value="audience">Animated audience</option></select>
+        </div>
+        <section id="varietyBox" class="variety-box" aria-labelledby="varietyBoxTitle">
+          <h2 id="varietyBoxTitle">Vocal variety</h2>
+          <strong id="varietyBoxStatus" role="status">Ready to listen</strong>
+          <p>Red = low variety · Amber = moderate variety · Green = high variety</p>
+          <small>Live feedback from pitch, volume, and pacing. Variety is one part of communication.</small>
+        </section>
         <p class="simulation-note">Audience reactions are a practice simulation based on sound patterns, not evidence of how real listeners feel.</p>
         <section class="audience-stage" id="audienceStage" aria-labelledby="audience-title">
           <div class="stage-header">
@@ -476,6 +486,6 @@
       </p>
     </footer>
 
-    <script src="app.js?v=presence-companion-20261015"></script>
+    <script src="app.js?v=colour-feedback-20261019"></script>
   </body>
 </html>

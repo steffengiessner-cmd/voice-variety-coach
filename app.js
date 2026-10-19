@@ -184,6 +184,8 @@ let speechRecognizer;
 let shouldTrackSpeech = false;
 let timedScrollInterval;
 let currentMode = "story";
+const visualFeedbackByMode = { story: "colour", business: "colour", own: "colour", audience: "audience", practice: "colour" };
+let liveVarietyScore = null;
 let currentScrollMode = "auto";
 let currentAudienceType = "duo";
 let currentAudienceResponsiveness = 50;
@@ -354,6 +356,7 @@ function setPrompt() {
 
 function setMode(mode) {
   currentMode = mode;
+  syncVisualFeedback();
   document.body.classList.toggle("own-text-mode", mode === "own");
   document.body.classList.toggle("audience-only-mode", mode === "audience");
   document.body.classList.toggle("practice-mode", mode === "practice");
@@ -1774,6 +1777,7 @@ function hasEnoughPraatSpeech(result) {
 }
 
 function showNoSpeechDetected() {
+  updateVarietyBox(null, "No audible speech detected");
   scoreValue.textContent = "--";
   clearQualityColors();
   attentionLabel.textContent = "No speech detected";
@@ -2041,6 +2045,7 @@ function setKidStates(states) {
 }
 
 function resetAudience() {
+  updateVarietyBox(null, document.querySelector("#feedbackMode").value === "explore" ? "Explore mode — live feedback paused" : "Ready to listen");
   resetAudienceTracking();
   attentionLabel.textContent = "Ready to listen";
   attentionMeter.style.width = "34%";
@@ -2048,6 +2053,7 @@ function resetAudience() {
 }
 
 function updateListeningPeriod(elapsedSeconds) {
+  updateVarietyBox(null, isReflectivePractice() ? "Explore mode — live feedback paused" : "Listening — keep speaking…");
   const progress = clamp(elapsedSeconds / MIN_FEEDBACK_SECONDS, 0, 1);
   const remaining = Math.max(0, MIN_FEEDBACK_SECONDS - elapsedSeconds);
   attentionLabel.textContent = remaining
@@ -2585,6 +2591,7 @@ function getRecentProsodyResult(windowSeconds = PRAAT_LIVE_WINDOW_SECONDS, elaps
 
 function updateAudienceOverTime(result) {
   const momentScore = clamp(result.score, 0, 100);
+  updateVarietyBox(momentScore);
   const memoryWeight = getAudienceMemoryWeight();
   audienceAttention = clamp(
     audienceAttention * memoryWeight + momentScore * (1 - memoryWeight),
@@ -2850,6 +2857,7 @@ function drawLiveWave() {
       lastAudienceUpdateAt = elapsedSeconds;
       const liveResult = scoreLiveAudience();
       if (liveResult == null) {
+        updateVarietyBox(null, "Waiting for audible speech");
         attentionLabel.textContent = "Waiting for speech";
         attentionMeter.style.width = "36%";
         setKidStates(["ready", "curious", "ready", "curious", "ready"]);
@@ -3031,6 +3039,7 @@ function analyzeRecording() {
   if (duration < MIN_FEEDBACK_SECONDS) {
     scoreValue.textContent = "--";
     clearQualityColors();
+    updateVarietyBox(null, "Speak for at least 5 seconds for feedback");
     attentionLabel.textContent = "Too short to judge";
     attentionMeter.style.width = "42%";
     setKidStates(["ready", "curious", "ready", "curious", "ready"]);
@@ -3474,4 +3483,31 @@ document.querySelector('#toolboxToggle').addEventListener('click', event => {
   panel.hidden = !panel.hidden;
   event.currentTarget.setAttribute('aria-expanded', String(!panel.hidden));
   event.currentTarget.textContent = panel.hidden ? 'Add Toolbox preparation' : 'Remove Toolbox preparation';
+});
+
+
+function syncVisualFeedback() {
+  const selection = visualFeedbackByMode[currentMode];
+  document.body.dataset.visualFeedback = selection;
+  document.querySelector('#visualFeedback').value = selection;
+}
+function updateVarietyBox(score, message = '') {
+  const box = document.querySelector('#varietyBox');
+  const status = document.querySelector('#varietyBoxStatus');
+  if (score == null || !Number.isFinite(score)) {
+    liveVarietyScore = null;
+    box.style.backgroundColor = '';
+    status.textContent = message || 'Ready to listen';
+    return;
+  }
+  // Smooth recent vocal variety independently of the audience responsiveness setting.
+  liveVarietyScore = liveVarietyScore == null ? score : liveVarietyScore * 0.65 + score * 0.35;
+  const value = clamp(liveVarietyScore, 0, 100);
+  box.style.backgroundColor = `hsl(${value * 1.2} 65% 75%)`;
+  const label = value < 35 ? 'Low variety' : value < 70 ? 'Moderate variety' : 'High variety';
+  if (status.textContent !== label) status.textContent = label;
+}
+document.querySelector('#visualFeedback').addEventListener('change', event => {
+  visualFeedbackByMode[currentMode] = event.target.value;
+  syncVisualFeedback();
 });
