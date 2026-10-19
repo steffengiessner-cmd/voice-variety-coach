@@ -420,12 +420,12 @@ Different audience types use different visual states, but the thresholds are the
 
 ## 13. Final Audience Score
 
-For normal takes, the app keeps a history of live audience attention values during the recording.
+For normal takes, the app keeps a separate history of live vocal-variety values, independent of audience attention. The colour box uses a fixed smoothing weight of 0.65 for the previous value and 0.35 for the new browser score, starting at the first valid score. The overall score averages these same smoothed values.
 
 At the end:
 
 ```text
-finalScore = round(mean(audienceAttentionHistory))
+finalScore = round(mean(varietyScoreHistory))
 ```
 
 If there are usable live moments, the final result uses:
@@ -435,7 +435,7 @@ If there are usable live moments, the final result uses:
 - mean pacing score across usable moments
 - mean tempo, pause, emphasis, and clarity scores
 - summed counts for peaks and pauses
-- average audience attention as the final score
+- average smoothed vocal variety as the final score
 
 If there is not enough live history, it falls back to the full-recording analysis.
 

@@ -4057,3 +4057,5 @@ body[data-visual-feedback="audience"] .variety-box-copy,
 body.practice-mode .variety-box-copy { display: none; }
 /* Keep the live status accessible while leaving only colour on screen. */
 body.is-recording .variety-box-copy { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+.score-ring small { max-width: 120px; text-align: center; line-height: 1.25; }

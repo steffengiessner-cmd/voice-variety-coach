@@ -186,6 +186,7 @@ let timedScrollInterval;
 let currentMode = "story";
 const visualFeedbackByMode = { story: "colour", business: "colour", own: "colour", audience: "audience", practice: "colour" };
 let liveVarietyScore = null;
+let varietyScoreHistory = [];
 let currentScrollMode = "auto";
 let currentAudienceType = "duo";
 let currentAudienceResponsiveness = 50;
@@ -2301,16 +2302,16 @@ function applyPraatAnalysis(result, options = {}) {
   mergePraatFeatureExport(result, coach);
 
   if (options.finalTechnical) {
-    setRecordingNotice("Praat technical check complete. The score summarizes simulated responses, not real audience attention.", "success");
+    setRecordingNotice("Praat technical check complete. Average vocal variety summarizes the live colour values across your take.", "success");
     return;
   }
 
-  const displayScore = options.live && audienceAttentionHistory.length
-    ? Math.round(audienceAttention)
-    : coach.score;
-  scoreValue.textContent = displayScore;
-  setScoreVisual(displayScore);
-  if (!options.live) updateAudience(coach.score);
+  // Praat adds technical feedback without replacing the shared browser variety score.
+  if (varietyScoreHistory.length) {
+    const displayScore = Math.round(mean(varietyScoreHistory));
+    scoreValue.textContent = displayScore;
+    setScoreVisual(displayScore);
+  }
   pitchMetric.textContent = coach.pitch.label;
   energyMetric.textContent = coach.volume.label;
   tempoMetric.textContent = coach.tempo.label;
@@ -2567,6 +2568,8 @@ function updateAudience(score) {
 }
 
 function resetAudienceTracking() {
+  varietyScoreHistory = [];
+  liveVarietyScore = null;
   audienceAttention = AUDIENCE_START_ATTENTION;
   audienceAttentionHistory = [];
   audienceMomentScores = [];
@@ -2592,6 +2595,10 @@ function getRecentProsodyResult(windowSeconds = PRAAT_LIVE_WINDOW_SECONDS, elaps
 function updateAudienceOverTime(result) {
   const momentScore = clamp(result.score, 0, 100);
   updateVarietyBox(momentScore);
+  varietyScoreHistory.push(liveVarietyScore);
+  const averageVariety = Math.round(mean(varietyScoreHistory));
+  scoreValue.textContent = averageVariety;
+  setScoreVisual(averageVariety);
   const memoryWeight = getAudienceMemoryWeight();
   audienceAttention = clamp(
     audienceAttention * memoryWeight + momentScore * (1 - memoryWeight),
@@ -2624,9 +2631,9 @@ function sumResultValue(results, property, fallback) {
 
 function buildFinalAudienceResult(fallbackResult) {
   const usableResults = audienceAnalysisHistory.filter(hasEnoughSpeech);
-  if (!usableResults.length || !audienceAttentionHistory.length) return fallbackResult;
+  if (!usableResults.length || !varietyScoreHistory.length) return fallbackResult;
 
-  const finalScore = Math.round(mean(audienceAttentionHistory));
+  const finalScore = Math.round(mean(varietyScoreHistory));
 
   return {
     ...fallbackResult,
@@ -3145,7 +3152,7 @@ function analyzeRecording() {
   } else if (result.pacingScore < 45) {
     feedbackText.textContent = "Across the take, the pacing needs more shape. Add one clean pause before an important idea and another after it lands.";
   } else {
-    feedbackText.textContent = "There is some variety, but the average audience reaction still has room to grow. Try a second take with steady contrast throughout, not only at the end.";
+    feedbackText.textContent = "There is some variety, but your average vocal variety still has room to grow. Try a second take with steady contrast throughout, not only at the end.";
   }
 }
 
