@@ -3564,7 +3564,18 @@ function openRecordingReader() {
     try {
       Promise.resolve(document.documentElement.requestFullscreen()).then(() => {
         readerFullscreenOwned = true;
-        if (!recordingReader.open) exitReaderFullscreen();
+        if (!recordingReader.open) {
+          exitReaderFullscreen();
+        } else {
+          // Fullscreen promotes the document above previously opened dialogs.
+          // Reopen the reader in the top layer after that transition completes.
+          const textScroll = readingText.scrollTop;
+          recordingReader.close();
+          recordingReader.showModal();
+          readingText.scrollTop = textScroll;
+          fitReaderAudience();
+          if (!readerStopButton.disabled) readerStopButton.focus({ preventScroll: true });
+        }
       }).catch(() => {});
     } catch (_) { /* The dialog provides the fullscreen fallback. */ }
   }
