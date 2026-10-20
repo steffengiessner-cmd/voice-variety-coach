@@ -161,6 +161,7 @@ const VOICE_ASSIST_WORDS_PER_SECOND = 2.05;
 
 const canvasContext = waveform.getContext("2d");
 let mediaRecorder;
+let recordingStartPending = false;
 let audioContext;
 let analyser;
 let source;
@@ -3306,18 +3307,26 @@ function finishRecording() {
 }
 
 async function toggleRecording() {
+  if (recordingStartPending) return;
   if (mediaRecorder && mediaRecorder.state === "recording") {
     mediaRecorder.stop();
     return;
   }
 
   document.querySelector("#practiceReflectionOptions").open = false;
+  recordingStartPending = true;
+  recordButton.disabled = true;
+  recordButton.textContent = "Waiting for microphone…";
+  lockPresenceControls(true);
+  setRecordingNotice("Allow microphone access in your browser. The reading view will open once recording starts.", "active");
   try {
     if (["story", "business", "own"].includes(currentMode)) {
       if (!hasReadingPassage()) throw new Error("Add your reading text before starting a fullscreen recording.");
-      openRecordingReader();
     }
     await startRecording();
+    // Keep microphone permission in the normal window; only enter the reader
+    // after access is granted and the recorder has actually started.
+    if (["story", "business", "own"].includes(currentMode)) openRecordingReader();
   } catch (error) {
     const message = error.name === "NotAllowedError"
       ? isLocalFilePage()
@@ -3334,6 +3343,9 @@ async function toggleRecording() {
     setRecordingNotice(message, "warning");
     feedbackText.textContent = message;
     await cleanupFailedRecordingStart();
+  } finally {
+    recordingStartPending = false;
+    recordButton.disabled = false;
   }
 }
 
@@ -3545,8 +3557,8 @@ function openRecordingReader() {
   readerPlaceholder = document.createComment('Reading text returns here');
   readingText.before(readerPlaceholder);
   document.querySelector('#readerTextMount').append(readingText);
-  readerStopButton.disabled = true;
-  readerStopButton.textContent = 'Preparing microphone…';
+  readerStopButton.disabled = false;
+  readerStopButton.textContent = 'Stop recording';
   document.body.classList.add('reader-open');
   const audienceMount = document.querySelector('#readerAudienceMount');
   audienceMount.hidden = visualFeedbackByMode[currentMode] !== 'audience';
@@ -3558,8 +3570,8 @@ function openRecordingReader() {
   }
   recordingReader.showModal();
   fitReaderAudience();
-  // Request during the Record click gesture; unsupported browsers keep the
-  // viewport-filling dialog, including phones that restrict native fullscreen.
+  // Microphone permission must finish before any fullscreen transition.
+  // If the click activation has expired, retain the viewport-filling dialog.
   if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
     try {
       Promise.resolve(document.documentElement.requestFullscreen()).then(() => {
