@@ -3535,6 +3535,7 @@ document.querySelector('#visualFeedback').addEventListener('change', event => {
 const recordingReader = document.querySelector('#recordingReader');
 const readerStopButton = document.querySelector('#readerStopButton');
 let readerPlaceholder = null;
+let readerAudiencePlaceholder = null;
 let readerFullscreenOwned = false;
 let readerPreviousScroll = 0;
 
@@ -3547,7 +3548,16 @@ function openRecordingReader() {
   readerStopButton.disabled = true;
   readerStopButton.textContent = 'Preparing microphone…';
   document.body.classList.add('reader-open');
+  const audienceMount = document.querySelector('#readerAudienceMount');
+  audienceMount.hidden = visualFeedbackByMode[currentMode] !== 'audience';
+  if (!audienceMount.hidden) {
+    const row = document.querySelector('#audienceRow');
+    readerAudiencePlaceholder = document.createComment('Audience returns here');
+    row.before(readerAudiencePlaceholder);
+    audienceMount.append(row);
+  }
   recordingReader.showModal();
+  fitReaderAudience();
   // Request during the Record click gesture; unsupported browsers keep the
   // viewport-filling dialog, including phones that restrict native fullscreen.
   if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
@@ -3571,6 +3581,14 @@ function closeRecordingReader() {
     readerPlaceholder.replaceWith(readingText);
     readerPlaceholder = null;
   }
+  if (readerAudiencePlaceholder) {
+    const row = document.querySelector('#audienceRow');
+    readerAudiencePlaceholder.replaceWith(row);
+    readerAudiencePlaceholder = null;
+    row.style.removeProperty('width');
+    row.style.removeProperty('transform');
+  }
+  document.querySelector('#readerAudienceMount').hidden = true;
   recordingReader.close();
   document.body.classList.remove('reader-open');
   exitReaderFullscreen();
@@ -3588,3 +3606,14 @@ recordingReader.addEventListener('cancel', event => {
   // Escape must not hide an active microphone behind the main app.
   if (mediaRecorder?.state === 'recording') readerStopButton.click();
 });
+
+function fitReaderAudience() {
+  const mount = document.querySelector('#readerAudienceMount');
+  if (mount.hidden || !recordingReader.open) return;
+  const row = mount.querySelector('#audienceRow');
+  if (!row) return;
+  row.style.width = `${Math.max(600, mount.clientWidth)}px`;
+  const scale = Math.min(1, mount.clientWidth / row.offsetWidth, mount.clientHeight / row.offsetHeight);
+  row.style.transform = `translateX(-50%) scale(${scale})`;
+}
+new ResizeObserver(fitReaderAudience).observe(document.querySelector('#readerAudienceMount'));

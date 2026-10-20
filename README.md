@@ -71,3 +71,5 @@ In Story, Business, and Own text, live colour appears as a light tint behind the
 ### Fullscreen recording reader
 
 Recording in Story, Business, or Own text opens a reading-only view with a Stop recording button at the top. The existing reading element retains text size, scrolling, word tracking, and live background colour when colour feedback is selected. Phones and desktop browsers use native fullscreen when permitted, otherwise a viewport-filling modal. Stopping returns the text to the main app for playback and feedback; microphone failures also restore the app. Practice and Just audience keep their existing recording layouts. Own text requires a reading passage before recording.
+
+When Animated audience is selected for Story, Business, or Own text, the fullscreen reader includes the live audience below the text. Only the text, audience, and top Stop recording button are shown. The audience scales to fit portrait and landscape screens, and returns to its original position after recording.
