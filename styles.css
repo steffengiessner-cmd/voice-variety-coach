@@ -4081,3 +4081,23 @@ body[data-visual-feedback="colour"] .reading-word.read { color: #3f4e59; backgro
 @media (prefers-reduced-motion: reduce) {
   body[data-visual-feedback="colour"] .reading-text { transition: none !important; }
 }
+
+/* Fullscreen teleprompter: the toolbar stays fixed while only the text scrolls. */
+body.reader-open { overflow: hidden; }
+#recordingReader { position: fixed; inset: 0; width: 100%; height: 100dvh; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; background: #f0f4f2; color: #23313d; }
+#recordingReader[open] { display: flex; flex-direction: column; }
+#recordingReader::backdrop { background: #f0f4f2; }
+.reader-toolbar { flex: 0 0 auto; display: flex; justify-content: center; padding: max(12px, env(safe-area-inset-top)) 16px 12px; background: #fff; border-bottom: 1px solid #d9e2eb; }
+#readerStopButton { min-height: 48px; padding: 12px 26px; background: #9d2929; color: white; border: 0; border-radius: 10px; font: inherit; font-weight: 700; cursor: pointer; }
+#readerStopButton:disabled { opacity: .7; cursor: wait; }
+#readerTextMount { flex: 1; min-height: 0; display: flex; }
+body #recordingReader #readingText { display: block; width: 100%; height: 100%; max-height: none; margin: 0; border-radius: 0; padding: 28px max(24px, calc((100vw - 1100px) / 2)) max(28px, env(safe-area-inset-bottom)); overflow-y: auto; overscroll-behavior: contain; line-height: 1.6; }
+body.reading-size-small #recordingReader #readingText { font-size: 1.25rem; }
+body.reading-size-medium #recordingReader #readingText { font-size: 1.65rem; }
+body.reading-size-large #recordingReader #readingText { font-size: 2.1rem; }
+@media (max-width: 700px) {
+  body #recordingReader #readingText { padding: 20px max(18px, env(safe-area-inset-left)) max(24px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-right)); line-height: 1.5; }
+  body.reading-size-small #recordingReader #readingText { font-size: 1.05rem; }
+  body.reading-size-medium #recordingReader #readingText { font-size: 1.3rem; }
+  body.reading-size-large #recordingReader #readingText { font-size: 1.55rem; }
+}

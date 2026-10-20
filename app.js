@@ -3208,6 +3208,8 @@ async function startRecording() {
   });
   mediaRecorder.addEventListener("stop", finishRecording);
   mediaRecorder.start();
+  document.querySelector("#readerStopButton").disabled = false;
+  document.querySelector("#readerStopButton").textContent = "Stop recording";
   startReadingTracker();
 
   recordingStartedAt = Date.now();
@@ -3240,6 +3242,7 @@ async function startRecording() {
 }
 
 async function cleanupFailedRecordingStart() {
+  closeRecordingReader();
   lockPresenceControls(false);
   clearInterval(timerInterval);
   cancelAnimationFrame(animationFrame);
@@ -3267,6 +3270,7 @@ async function cleanupFailedRecordingStart() {
 }
 
 function finishRecording() {
+  closeRecordingReader();
   clearInterval(timerInterval);
   cancelAnimationFrame(animationFrame);
   stopLivePraatAnalysis();
@@ -3309,6 +3313,10 @@ async function toggleRecording() {
 
   document.querySelector("#practiceReflectionOptions").open = false;
   try {
+    if (["story", "business", "own"].includes(currentMode)) {
+      if (!hasReadingPassage()) throw new Error("Add your reading text before starting a fullscreen recording.");
+      openRecordingReader();
+    }
     await startRecording();
   } catch (error) {
     const message = error.name === "NotAllowedError"
@@ -3520,4 +3528,63 @@ function updateVarietyBox(score, message = '') {
 document.querySelector('#visualFeedback').addEventListener('change', event => {
   visualFeedbackByMode[currentMode] = event.target.value;
   syncVisualFeedback();
+});
+
+
+// Reuse the reading element so word tracking, scrolling, and colour stay in sync.
+const recordingReader = document.querySelector('#recordingReader');
+const readerStopButton = document.querySelector('#readerStopButton');
+let readerPlaceholder = null;
+let readerFullscreenOwned = false;
+let readerPreviousScroll = 0;
+
+function openRecordingReader() {
+  if (recordingReader.open) return;
+  readerPreviousScroll = window.scrollY;
+  readerPlaceholder = document.createComment('Reading text returns here');
+  readingText.before(readerPlaceholder);
+  document.querySelector('#readerTextMount').append(readingText);
+  readerStopButton.disabled = true;
+  readerStopButton.textContent = 'Preparing microphone…';
+  document.body.classList.add('reader-open');
+  recordingReader.showModal();
+  // Request during the Record click gesture; unsupported browsers keep the
+  // viewport-filling dialog, including phones that restrict native fullscreen.
+  if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+    try {
+      Promise.resolve(document.documentElement.requestFullscreen()).then(() => {
+        readerFullscreenOwned = true;
+        if (!recordingReader.open) exitReaderFullscreen();
+      }).catch(() => {});
+    } catch (_) { /* The dialog provides the fullscreen fallback. */ }
+  }
+}
+function exitReaderFullscreen() {
+  if (readerFullscreenOwned && document.fullscreenElement && document.exitFullscreen) {
+    document.exitFullscreen().catch(() => {});
+  }
+  readerFullscreenOwned = false;
+}
+function closeRecordingReader() {
+  if (!recordingReader.open && !readerPlaceholder) return;
+  if (readerPlaceholder) {
+    readerPlaceholder.replaceWith(readingText);
+    readerPlaceholder = null;
+  }
+  recordingReader.close();
+  document.body.classList.remove('reader-open');
+  exitReaderFullscreen();
+  recordButton.focus({ preventScroll: true });
+  window.scrollTo(0, readerPreviousScroll);
+}
+readerStopButton.addEventListener('click', () => {
+  if (mediaRecorder?.state !== 'recording') return;
+  readerStopButton.disabled = true;
+  readerStopButton.textContent = 'Stopping…';
+  mediaRecorder.stop();
+});
+recordingReader.addEventListener('cancel', event => {
+  event.preventDefault();
+  // Escape must not hide an active microphone behind the main app.
+  if (mediaRecorder?.state === 'recording') readerStopButton.click();
 });

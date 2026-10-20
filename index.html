@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Voice Variety Coach</title>
-    <link rel="stylesheet" href="styles.css?v=colour-feedback-20261019" />
+    <link rel="stylesheet" href="styles.css?v=fullscreen-reader-20261020" />
   </head>
   <body>
     <main class="app-shell">
@@ -487,6 +487,12 @@
       </p>
     </footer>
 
-    <script src="app.js?v=colour-feedback-20261019"></script>
+    <dialog id="recordingReader" aria-label="Fullscreen reading and recording">
+      <div class="reader-toolbar">
+        <button id="readerStopButton" class="primary-button" type="button">Stop recording</button>
+      </div>
+      <div id="readerTextMount"></div>
+    </dialog>
+    <script src="app.js?v=fullscreen-reader-20261020"></script>
   </body>
 </html>
