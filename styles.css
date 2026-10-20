@@ -4059,3 +4059,25 @@ body.practice-mode .variety-box-copy { display: none; }
 body.is-recording .variety-box-copy { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
 .score-ring small { max-width: 120px; text-align: center; line-height: 1.25; }
+
+/* Reading and live variety share one surface, freeing space on phones. */
+body[data-visual-feedback="colour"]:not(.audience-only-mode):not(.practice-mode) .reading-text {
+  background-color: var(--variety-background, #f0f4f2);
+  color: #23313d;
+  padding: 16px;
+  border-radius: 12px;
+  transition: background-color 800ms ease;
+}
+body[data-visual-feedback="colour"]:not(.audience-only-mode) .variety-box { display: none !important; }
+body[data-visual-feedback="colour"] .reading-word.read { color: #3f4e59; background: transparent; }
+@media (max-width: 700px) {
+  body[data-visual-feedback="colour"]:not(.audience-only-mode):not(.practice-mode) .reading-text {
+    height: clamp(220px, 46svh, 420px);
+  }
+  body[data-visual-feedback="colour"].is-recording.reading-size-small .reading-text { font-size: .98rem; }
+  body[data-visual-feedback="colour"].is-recording.reading-size-medium .reading-text { font-size: 1.12rem; }
+  body[data-visual-feedback="colour"].is-recording.reading-size-large .reading-text { font-size: 1.28rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body[data-visual-feedback="colour"] .reading-text { transition: none !important; }
+}

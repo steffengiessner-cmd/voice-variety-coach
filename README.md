@@ -65,3 +65,5 @@ Acoustic feedback remains available as an option. Audience reactions are explici
 ### Average vocal variety
 
 The colour box and overall score share the same browser vocal-variety calculation. Each valid live reading is smoothed with a fixed 65% previous / 35% new weighting; the first reading starts at its measured value. The displayed average is the arithmetic mean of those smoothed readings (one per live update), rounded to 0–100. Audience type and responsiveness affect only the animated audience. Praat technical checks do not replace this score. Silence without a usable reading is not added as zero; a whole-recording estimate is the fallback if there are no usable live readings. This is practice feedback about vocal variation, not a measure of communication effectiveness.
+
+In Story, Business, and Own text, live colour appears as a light tint behind the reading text instead of a separate box. The phone reading area remains enlarged during recording. Just audience retains the standalone box. Switching to Animated audience removes the reading tint.

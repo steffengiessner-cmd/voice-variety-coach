@@ -3497,6 +3497,7 @@ function syncVisualFeedback() {
   const selection = visualFeedbackByMode[currentMode];
   document.body.dataset.visualFeedback = selection;
   document.querySelector('#visualFeedback').value = selection;
+  document.querySelector('#visualFeedback option[value="colour"]').textContent = currentMode === 'audience' ? 'Colour box' : 'Colour behind text';
 }
 function updateVarietyBox(score, message = '') {
   const box = document.querySelector('#varietyBox');
@@ -3504,6 +3505,7 @@ function updateVarietyBox(score, message = '') {
   if (score == null || !Number.isFinite(score)) {
     liveVarietyScore = null;
     box.style.backgroundColor = '';
+    readingText.style.removeProperty('--variety-background');
     status.textContent = message || 'Ready to listen';
     return;
   }
@@ -3511,6 +3513,7 @@ function updateVarietyBox(score, message = '') {
   liveVarietyScore = liveVarietyScore == null ? score : liveVarietyScore * 0.65 + score * 0.35;
   const value = clamp(liveVarietyScore, 0, 100);
   box.style.backgroundColor = `hsl(${value * 1.2} 65% 75%)`;
+  readingText.style.setProperty('--variety-background', `hsl(${value * 1.2} 65% 90%)`);
   const label = value < 35 ? 'Low variety' : value < 70 ? 'Moderate variety' : 'High variety';
   if (status.textContent !== label) status.textContent = label;
 }
